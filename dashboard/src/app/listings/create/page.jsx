@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from "react";
-import { FaHome, FaBuilding, FaCity, FaTree, FaMapMarkerAlt, FaChevronRight, FaCheck, FaMap, FaRulerCombined, FaExpand, FaDollarSign, FaExclamationTriangle, FaEye, FaChevronLeft, FaImages, FaCloudUploadAlt, FaVideo, FaPlus, FaImage, FaLightbulb, FaSun, FaVectorSquare, FaTrash, FaGripVertical, FaPlay, FaStar, FaBath, FaBed, FaSignature, FaUmbrellaBeach, FaFire, FaSwimmingPool, FaUtensils, FaSoap, FaMicrophone, FaSnowflake, FaThermometerHalf, FaTshirt, FaShieldAlt, FaLock, FaCar, FaWarehouse, FaChair, FaCouch, FaPaw, FaWheelchair, FaWifi, FaSeedling, FaEdit, FaChevronDown, FaHeart } from "react-icons/fa";
+import { FaHome, FaBuilding, FaCity, FaTree, FaMapMarkerAlt, FaChevronRight, FaCheck, FaMap, FaRulerCombined, FaExpand, FaDollarSign, FaExclamationTriangle, FaEye, FaChevronLeft, FaImages, FaCloudUploadAlt, FaVideo, FaPlus, FaImage, FaLightbulb, FaSun, FaVectorSquare, FaTrash, FaGripVertical, FaPlay, FaStar, FaBath, FaBed, FaSignature, FaUmbrellaBeach, FaFire, FaSwimmingPool, FaUtensils, FaSoap, FaMicrophone, FaSnowflake, FaThermometerHalf, FaTshirt, FaShieldAlt, FaLock, FaCar, FaWarehouse, FaChair, FaCouch, FaPaw, FaWheelchair, FaWifi, FaSeedling, FaEdit, FaChevronDown, FaHeart, FaTag, FaHandshake } from "react-icons/fa";
 import { US_STATES, US_CITIES } from "../../../utils/usData"
 import MuiDropdown from "@/app/components/MuiDropdown";
 import CustomToast from "@/app/components/CustomToast";
@@ -10,6 +10,8 @@ const Page = () => {
     const [activeTab, setActiveTab] = useState("Residential");
     const [currentStep, setCurrentStep] = useState(1)
     const [selectedProperty, setSelectedProperty] = useState("");
+    const [propertyFor, setPropertyFor] = useState("");
+    const [priceType, setPriceType] = useState("fixed");
     const [state, setState] = useState("")
     const [city, setCity] = useState("");
     const [size, setSize] = useState("");
@@ -18,6 +20,7 @@ const Page = () => {
     const [previews, setPreviews] = useState([]);
     const [coverPhotoIndex, setCoverPhotoIndex] = useState(0);
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState("");
     // Add these to your existing state variables
     const [propertyName, setPropertyName] = useState('');
     const [bedrooms, setBedrooms] = useState("");
@@ -539,6 +542,7 @@ const Page = () => {
         },
         2: () => {
             let errors = {};
+            if (!propertyFor) errors.propertyFor = "Please select whether you're selling or renting";
             if (!state) errors.state = "State is required";
             if (!city) errors.city = "City is required";
             if (!size) errors.size = "Property size is required";
@@ -606,15 +610,15 @@ const Page = () => {
             }
             return;
         }
-           if (currentStep === 2) {
-        setCurrentStep(3);
-    } else if (currentStep === 3) {
-        setCurrentStep(4);
-    } else if (currentStep === 4) {
-        handleSubmit(); // ✅ call submit when step 4 is reached
-    }
+        if (currentStep === 2) {
+            setCurrentStep(3);
+        } else if (currentStep === 3) {
+            setCurrentStep(4);
+        } else if (currentStep === 4) {
+            handleSubmit(); // ✅ call submit when step 4 is reached
+        }
 
-        
+
     };
 
 
@@ -627,10 +631,12 @@ const Page = () => {
 
 
     const inputRefs = {
+        propertyFor: useRef(null),
         state: useRef(null),
         city: useRef(null),
         size: useRef(null),
         price: useRef(null),
+        priceType: useRef(null),
         propertyName: useRef(null),
         description: useRef(null),
         bedrooms: useRef(null),
@@ -639,28 +645,37 @@ const Page = () => {
 
 
     const handleSubmit = async () => {
-        const response = await uploadListing({
-            title: propertyName,
-            description,
-            selectedProperty,
-            activeTab,
-            state,
-            city,
-            size,
-            price,
-            bedrooms,
-            bathrooms,
-            selectedAmenities,
-            owner,
-            agent,
-            files,
-            coverPhotoIndex,
-        });
+        setLoading(true);
+        try {
+            const response = await uploadListing({
+                title: propertyName,
+                description,
+                selectedProperty,
+                activeTab,
+                propertyFor,
+                state,
+                city,
+                size,
+                price,
+                priceType,
+                bedrooms,
+                bathrooms,
+                selectedAmenities,
+                owner,
+                agent,
+                files,
+                coverPhotoIndex,
+            });
 
-        if (response.success) {
-            setToast({ type: "success", message: response.message });
-        } else {
-            setToast({ type: "error", message: response.message });
+            if (response.success) {
+                setToast({ type: "success", message: response.message });
+            } else {
+                setToast({ type: "error", message: response.message });
+            }
+        } catch (error) {
+            setToast({ type: "error", message: "Failed to submit listing" });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -812,68 +827,95 @@ const Page = () => {
 
                         {/* Form Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                            {/* Location Section */}
+                            {/* Left Column - Location & Property Type */}
                             <div className="space-y-6">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="p-2 bg-blue-50 rounded-lg">
-                                        <FaMapMarkerAlt className="text-blue-600" />
+                                {/* Property For Dropdown */}
+                                <div className="space-y-2">
+                                    <label className="font-medium text-gray-700 text-sm flex items-center gap-1">
+                                        <FaTag className="text-gray-400 text-xs" />
+                                        Property For
+                                    </label>
+                                    <MuiDropdown
+                                        options={[
+                                            { label: "Sell", value: "Sell" },
+                                            { label: "Rent", value: "Rent" }
+                                        ]}
+                                        ref={inputRefs.propertyFor}
+                                        value={propertyFor}
+                                        onChange={setPropertyFor}
+                                        placeholder="Select listing type"
+                                        className={`w-full ${errors.propertyFor ? "normal_err" : ""}`}
+                                    />
+                                    {errors.propertyFor && (
+                                        <p className="text-red-500 text-xs font-medium flex items-center gap-1">
+                                            <FaExclamationTriangle className="text-xs" />
+                                            {errors.propertyFor}
+                                        </p>
+                                    )}
+                                    <p className="text-xs text-gray-500">Choose whether you want to sell or rent this property</p>
+                                </div>
+
+                                {/* Location Section */}
+                                <div className="space-y-4 pt-4 border-t border-gray-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-blue-50 rounded-lg">
+                                            <FaMapMarkerAlt className="text-blue-600" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">Location Details</h3>
                                     </div>
-                                    <h3 className="text-lg font-semibold text-gray-900">Location Details</h3>
-                                </div>
 
-                                {/* State Dropdown */}
-                                <div className="space-y-2">
-                                    <label className="font-medium text-gray-700 text-sm flex items-center gap-1">
-                                        <FaMap className="text-gray-400 text-xs" />
-                                        State
-                                    </label>
-                                    <MuiDropdown
-                                        options={US_STATES}
-                                        ref={inputRefs.state}
-                                        value={state}
-                                        onChange={setState}
-                                        placeholder="Select your state"
-                                        className={`w-full ${errors.state ? "normal_err" : ""}`}
-                                    />
-                                    {errors.state && (
-                                        <p className="text-red-500 text-xs font-medium flex items-center gap-1">
-                                            <FaExclamationTriangle className="text-xs" />
-                                            {errors.state}
-                                        </p>
-                                    )}
+                                    {/* State Dropdown */}
+                                    <div className="space-y-2">
+                                        <label className="font-medium text-gray-700 text-sm flex items-center gap-1">
+                                            <FaMap className="text-gray-400 text-xs" />
+                                            State
+                                        </label>
+                                        <MuiDropdown
+                                            options={US_STATES}
+                                            ref={inputRefs.state}
+                                            value={state}
+                                            onChange={setState}
+                                            placeholder="Select your state"
+                                            className={`w-full ${errors.state ? "normal_err" : ""}`}
+                                        />
+                                        {errors.state && (
+                                            <p className="text-red-500 text-xs font-medium flex items-center gap-1">
+                                                <FaExclamationTriangle className="text-xs" />
+                                                {errors.state}
+                                            </p>
+                                        )}
+                                    </div>
 
-                                </div>
+                                    {/* City Dropdown */}
+                                    <div className="space-y-2">
+                                        <label className="font-medium text-gray-700 text-sm flex items-center gap-1">
+                                            <FaCity className="text-gray-400 text-xs" />
+                                            City
+                                        </label>
+                                        <MuiDropdown
+                                            options={availableCities}
+                                            ref={inputRefs.city}
+                                            value={city}
+                                            onChange={setCity}
+                                            locked={availableCities.length === 0}
+                                            placeholder={availableCities.length === 0 ? "Select state first" : "Select your city"}
+                                            className={`w-full ${errors.city ? "normal_err" : ""}`}
+                                        />
 
-                                {/* City Dropdown */}
-                                <div className="space-y-2">
-                                    <label className="font-medium text-gray-700 text-sm flex items-center gap-1">
-                                        <FaCity className="text-gray-400 text-xs" />
-                                        City
-                                    </label>
-                                    <MuiDropdown
-                                        options={availableCities}
-                                        ref={inputRefs.city}
-                                        value={city}
-                                        onChange={setCity}
-                                        locked={availableCities.length === 0}
-                                        placeholder={availableCities.length === 0 ? "Select state first" : "Select your city"}
-                                        className={`w-full ${errors.city ? "normal_err" : ""}`}
-                                    />
-
-                                    {availableCities.length === 0 && (
-                                        <p className="text-xs text-gray-500 mt-1">Please select a state first to see available cities</p>
-                                    )}
-                                    {errors.city && (
-                                        <p className="text-red-500 text-xs font-medium flex items-center gap-1">
-                                            <FaExclamationTriangle className="text-xs" />
-                                            {errors.city}
-                                        </p>
-                                    )}
-
+                                        {availableCities.length === 0 && (
+                                            <p className="text-xs text-gray-500 mt-1">Please select a state first to see available cities</p>
+                                        )}
+                                        {errors.city && (
+                                            <p className="text-red-500 text-xs font-medium flex items-center gap-1">
+                                                <FaExclamationTriangle className="text-xs" />
+                                                {errors.city}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Property Details Section */}
+                            {/* Right Column - Property Details */}
                             <div className="space-y-6">
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="p-2 bg-green-50 rounded-lg">
@@ -910,26 +952,24 @@ const Page = () => {
                                     ) : (
                                         <p className="text-xs text-gray-500">Enter the total area of your property</p>
                                     )}
-                                    <p className="text-xs text-gray-500">Enter the total area of your property</p>
                                 </div>
 
                                 {/* Asking Price Input */}
                                 <div className="space-y-2">
                                     <label className="font-medium text-gray-700 text-sm flex items-center gap-1">
                                         <FaDollarSign className="text-gray-500 text-sm" />
-                                        Asking Price (usd)
+                                        {propertyFor === 'Rent' ? 'Monthly Rent (USD)' : 'Asking Price (USD)'}
                                     </label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
                                         <input
                                             type="text"
                                             ref={inputRefs.price}
-                                            placeholder="350,000"
+                                            placeholder={propertyFor === 'Rent' ? "2,500" : "350,000"}
                                             className={`w-full normal_input mod_1 ${errors.price ? "normal_err" : ""}`}
                                             value={price}
                                             onChange={handlePriceChange}
                                         />
-
                                     </div>
                                     {errors.price ? (
                                         <p className="text-red-500 text-xs font-medium flex items-center gap-1">
@@ -937,14 +977,44 @@ const Page = () => {
                                             {errors.price}
                                         </p>
                                     ) : (
-                                        <p className="text-xs text-gray-500">Enter your desired selling price</p>
+                                        <p className="text-xs text-gray-500">
+                                            {propertyFor === 'Rent'
+                                                ? 'Enter the monthly rental price'
+                                                : 'Enter your desired selling price'
+                                            }
+                                        </p>
                                     )}
                                 </div>
+
+                                {/* Price Type Dropdown (only for Sell) */}
+                                {propertyFor === 'Sell' && (
+                                    <div className="space-y-2">
+                                        <label className="font-medium text-gray-700 text-sm flex items-center gap-1">
+                                            <FaHandshake className="text-gray-400 text-xs" />
+                                            Price Type
+                                        </label>
+                                        <MuiDropdown
+                                            options={[
+                                                { label: "Fixed Price", value: "fixed" },
+                                                { label: "Negotiable", value: "negotiable" },
+                                                { label: "Auction", value: "auction" }
+                                            ]}
+                                            ref={inputRefs.priceType}
+                                            value={priceType}
+                                            onChange={setPriceType}
+                                            placeholder="Select price type"
+                                            className="w-full"
+                                        />
+                                        <p className="text-xs text-gray-500">
+                                            Choose how you want to price your property
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
                         {/* Preview Card */}
-                        {(state || city || size || price) && (
+                        {(propertyFor || state || city || size || price) && (
                             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200 mb-6">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-4">
@@ -953,29 +1023,45 @@ const Page = () => {
                                         </div>
                                         <div>
                                             <h4 className="font-semibold text-gray-900 text-sm">Property Preview</h4>
-                                            <div className="flex flex-wrap gap-4 mt-1">
+                                            <div className="flex flex-wrap gap-3 mt-2">
+                                                {propertyFor && (
+                                                    <span className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-full font-medium ${propertyFor === 'Sell'
+                                                        ? 'bg-orange-100 text-orange-700 border border-orange-200'
+                                                        : 'bg-blue-100 text-blue-700 border border-blue-200'
+                                                        }`}>
+                                                        <FaTag className="text-xs" />
+                                                        For {propertyFor}
+                                                    </span>
+                                                )}
                                                 {state && (
-                                                    <span className="flex items-center gap-1 text-xs text-gray-600 bg-white px-2 py-1 rounded-full">
+                                                    <span className="flex items-center gap-1 text-xs text-gray-600 bg-white px-3 py-1.5 rounded-full border border-gray-200">
                                                         <FaMapMarkerAlt className="text-blue-500" />
                                                         {state}
                                                     </span>
                                                 )}
                                                 {city && (
-                                                    <span className="flex items-center gap-1 text-xs text-gray-600 bg-white px-2 py-1 rounded-full">
+                                                    <span className="flex items-center gap-1 text-xs text-gray-600 bg-white px-3 py-1.5 rounded-full border border-gray-200">
                                                         <FaBuilding className="text-green-500" />
                                                         {city}
                                                     </span>
                                                 )}
                                                 {size && (
-                                                    <span className="flex items-center gap-1 text-xs text-gray-600 bg-white px-2 py-1 rounded-full">
+                                                    <span className="flex items-center gap-1 text-xs text-gray-600 bg-white px-3 py-1.5 rounded-full border border-gray-200">
                                                         <FaRulerCombined className="text-purple-500" />
                                                         {size} sq ft
                                                     </span>
                                                 )}
                                                 {price && (
-                                                    <span className="flex items-center gap-1 text-xs text-gray-600 bg-white px-2 py-1 rounded-full">
+                                                    <span className="flex items-center gap-1 text-xs text-gray-600 bg-white px-3 py-1.5 rounded-full border border-gray-200 font-medium">
                                                         <FaDollarSign className="text-green-500" />
                                                         ${price}
+                                                        {propertyFor === 'Rent' && '/mo'}
+                                                    </span>
+                                                )}
+                                                {propertyFor === 'Sell' && priceType && (
+                                                    <span className="flex items-center gap-1 text-xs bg-white px-3 py-1.5 rounded-full border border-gray-200 font-medium capitalize">
+                                                        <FaHandshake className="text-yellow-500" />
+                                                        {priceType}
                                                     </span>
                                                 )}
                                             </div>
@@ -987,7 +1073,6 @@ const Page = () => {
                                     >
                                         Continue <FaChevronRight className="text-xs" />
                                     </button>
-
                                 </div>
                             </div>
                         )}
@@ -1000,7 +1085,6 @@ const Page = () => {
                             >
                                 <FaChevronLeft /> Back
                             </button>
-
                         </div>
                     </div>
                 </div>
@@ -1506,10 +1590,25 @@ const Page = () => {
                                     </div>
                                     <button
                                         onClick={handleContinue}
-                                        className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-[50px] hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+                                        disabled={loading}
+                                        className="relative cursor-pointer flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-[50px] hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 font-medium shadow-lg hover:shadow-xl disabled:shadow-md transform hover:scale-105 disabled:scale-100 min-w-[180px] overflow-hidden group"
                                     >
-                                        <FaCheck />
-                                        Complete Listing
+                                        {/* Animated background shine effect */}
+                                        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+
+                                        {loading ? (
+                                            <>
+                                                <div className="relative z-10 flex items-center gap-3">
+                                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                                                    <span className="font-semibold">Processing...</span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FaCheck className="text-lg relative z-10" />
+                                                <span className="relative z-10 font-semibold">Complete Listing</span>
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>

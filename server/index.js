@@ -5,46 +5,62 @@ const cookieParser = require("cookie-parser");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const connectDb = require("./utils/DataBase");
-
+const ScheduledCleanupService = require('./services/scheduledCleanup');
 // Load environment variables once here
 dotenv.config({ path: "./utils/config.env" });
 
 const app = express();
 
+// CORS setup - MUST BE BEFORE OTHER MIDDLEWARE
+const allowedOrigins = [
+  "http://localhost:3000", // Dashboard
+  "http://localhost:3002", // Frontend
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS not allowed for origin: ${origin}`));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type", 
+    "Authorization", 
+    "X-Requested-With",
+    "Accept",
+    "Origin"
+  ],
+  exposedHeaders: ["Content-Range", "X-Content-Range"],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+// Apply CORS globally - REMOVE the separate app.options line
+app.use(cors(corsOptions));
+
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(helmet()); // Security headers
+
 if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev")); // Logging for dev
 }
 
-// CORS setup
-const allowedOrigins = [
-  "http://localhost:3000", // SellerCenter
-  "http://localhost:3002", // Frontend
-];
-
-const corsOpt = {
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: "GET,POST,PUT,DELETE,PATCH",
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-};
-app.use(cors(corsOpt));
-
-// Routes
+// Test route
 app.get("/", (req, res) => {
   res.json({ message: "API is running 🚀" });
 });
 
-const listing = require("./Routes/ListingRoute")
+// Routes
+const listing = require("./Routes/ListingRoute");
 app.use("/api/listings", listing);
 
 // Handle 404
@@ -55,11 +71,25 @@ app.use((req, res, next) => {
 // Centralized error handler
 app.use((err, req, res, next) => {
   console.error("Error:", err.message);
+  
+  // CORS error handling
+  if (err.message.includes('CORS')) {
+    return res.status(403).json({
+      success: false,
+      message: "CORS policy: Origin not allowed"
+    });
+  }
+  
   res.status(err.status || 500).json({
     success: false,
     message: err.message || "Internal Server Error",
   });
 });
+
+// Services
+if (process.env.NODE_ENV === 'production') {
+  ScheduledCleanupService.start();
+}
 
 // Start server only after DB connects
 (async () => {
@@ -68,6 +98,7 @@ app.use((err, req, res, next) => {
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, () => {
       console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+      console.log(`📍 Allowed origins: ${allowedOrigins.join(', ')}`);
     });
   } catch (err) {
     console.error("❌ Exiting due to DB connection failure");

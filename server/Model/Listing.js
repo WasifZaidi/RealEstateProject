@@ -147,6 +147,11 @@ const listingSchema = new Schema({
       ]
     }
   },
+
+  propertyFor: {
+    type: String,
+    required: true
+  },
   
   // Location
   location: {
