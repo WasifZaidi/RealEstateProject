@@ -1,0 +1,44 @@
+# Node modules
+node_modules/
+frontend/node_modules/
+dashboard/node_modules/
+server/node_modules/
+
+# Build / dist output
+frontend/build/
+dashboard/build/
+server/dist/
+server/build/
+frontend/.next/
+
+# Environment files
+.env
+frontend/.env
+dashboard/.env
+server/.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS / system
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# IDE
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Misc
+*.bak
+*.swp
+*.log
+*.tmp
+*.temp

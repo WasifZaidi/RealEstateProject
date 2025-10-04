@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+
+body {
+  background: var(--background);
+  color: black;
+}
+.normal_input {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 14px;
+    border: 1px solid #dbdbdb;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    outline: none;
+    color: #2d3748;
+}
+
+/* Focus state */
+.normal_input:focus {
+    border-color: #2563eb; /* Professional blue */
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25),
+                0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Placeholder styling */
+.normal_input::placeholder {
+    color: #a0aec0;
+    opacity: 1;
+}
+
+/* Error state */
+.normal_input.normal_err {
+    border-color: #ef4444;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2),
+                0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Error state focus */
+.normal_input.normal_err:focus {
+    border-color: #dc2626;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25),
+                0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.normal_input.mod_1{
+  padding-left: 30px;
+}

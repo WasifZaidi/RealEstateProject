@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gray-primary: rgb(112, 112, 112);
+}
+
+.no {
+  line-height: 0px;
+}
+
+/* .container */
+.container {
+  max-width: 1500px;
+  width: 95%;
+  margin: 0 auto;
+}
+
+.cards::-webkit-scrollbar {
+  display: none;
+}
+
+.img {
+  display: block;
+}
+
+.img_box {
+  position: relative;
+  aspect-ratio: 640 / 460;
+  width: 100%;
+}
+
+svg {
+  display: block;
+  flex-shrink: 0;
+
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.cc {
+  color: #2c2c2c;
+}
+
+.cc {
+  color: rgb(0, 149, 255);
+}
+
+.margin_top_reg{
+  margin-top: 80px;
+}
+/* For sb  */
+/* Responsive card width override for screen <= 1300px */
+@media (max-width: 1300px) {
+  .HomeListings .cards .card {
+    min-width: calc(33.3333% - 30px);
+    /* 3 columns layout */
+  }
+}
+
+@media (max-width: 900px) {
+  .HomeListings .cards .card {
+    min-width: calc(50% - 30px);
+    /* 3 columns layout */
+  }
+}
+
+@media (max-width: 700px) {
+  .HomeListings .cards {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 500px) {
+  .HomeListings .cards .card {
+    min-width: calc(100% - 40px);
+    /* 3 columns layout */
+  }
+
+  .margin_top_reg{
+  margin-top: 80px;
+}
+}
+
+
+
