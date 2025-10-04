@@ -10,7 +10,7 @@ dashboard/build/
 server/dist/
 server/build/
 frontend/.next/
-
+dashboard/.next/
 # Environment files
 .env
 frontend/.env
