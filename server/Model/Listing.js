@@ -56,6 +56,8 @@ const locationSchema = new Schema({
   neighborhood: String
 });
 
+
+
 // Pricing Sub-schema
 const pricingSchema = new Schema({
   amount: {

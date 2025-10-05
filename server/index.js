@@ -62,6 +62,8 @@ app.get("/", (req, res) => {
 // Routes
 const listing = require("./Routes/ListingRoute");
 app.use("/api/listings", listing);
+const userRoutes = require("./Routes/UserRoute")
+app.use('/api', userRoutes )
 
 // Handle 404
 app.use((req, res, next) => {

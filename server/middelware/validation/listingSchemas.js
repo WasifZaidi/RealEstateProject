@@ -109,13 +109,22 @@ const createListingSchema = Joi.object({
 }).options({ abortEarly: false });
 
 // Filter schema for GET listings
+
+const PROPERTY_TYPES = {
+  RESIDENTIAL: ['apartment', 'house', 'villa', 'condo', 'townhouse'],
+  PLOT: ['commercial-plot', 'residential-plot', 'agricultural-plot', 'industrial-plot'],
+  COMMERCIAL: ['office', 'retail', 'warehouse', 'restaurant'],
+  INDUSTRIAL: ['factory', 'storage', 'manufacturing']
+};
+const ALL_PROPERTY_TYPES = Object.values(PROPERTY_TYPES).flat();
+
 const filterListingSchema = Joi.object({
   // Pagination
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(20),
-  
+
   // Basic filters
-  propertyType: Joi.string().valid('Residential', 'Plot', 'Commercial', 'Industrial'),
+  propertyType: Joi.string().valid(...ALL_PROPERTY_TYPES),
   propertyFor: Joi.string().valid('Sell', 'Rent'),
   minPrice: Joi.number().min(0),
   maxPrice: Joi.number().min(0),
@@ -125,7 +134,7 @@ const filterListingSchema = Joi.object({
   maxBathrooms: Joi.number().integer().min(0),
   minSize: Joi.number().min(0),
   maxSize: Joi.number().min(0),
-  
+
   // Location filters
   state: Joi.string().trim(),
   city: Joi.string().trim(),
@@ -134,7 +143,7 @@ const filterListingSchema = Joi.object({
   latitude: Joi.number().min(-90).max(90),
   longitude: Joi.number().min(-180).max(180),
   radius: Joi.number().min(0).max(100).default(10),
-  
+
   // Advanced filters
   amenities: Joi.alternatives().try(
     Joi.string(),
@@ -148,23 +157,23 @@ const filterListingSchema = Joi.object({
   maxFloors: Joi.number().integer().min(1),
   minParking: Joi.number().integer().min(0),
   maxParking: Joi.number().integer().min(0),
-  
+
   // Status and visibility
   status: Joi.string().valid('draft', 'active', 'pending', 'sold', 'expired', 'archived').default('active'),
   isFeatured: Joi.boolean(),
   isPremium: Joi.boolean(),
   visibility: Joi.string().valid('public', 'private', 'unlisted').default('public'),
-  
+
   // Search
   search: Joi.string().trim().max(100),
-  
+
   // Sorting
   sortBy: Joi.string().valid(
-    'price.amount', 'listedAt', 'views', 'favoritesCount', 
+    'price.amount', 'listedAt', 'views', 'favoritesCount',
     'details.size', 'details.bedrooms', 'details.bathrooms'
   ).default('listedAt'),
   sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
-  
+
   // Agent/Owner filters
   owner: Joi.string(),
   agent: Joi.string()

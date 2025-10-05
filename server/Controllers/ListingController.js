@@ -3,8 +3,8 @@
 
 const Listing = require("../Model/Listing");
 const cloudinary = require("../utils/cloudinary");
-const {v4: uuidv4} = require("uuid")
-const FileCleanupManager = require("../utils/fileCleanup"); 
+const { v4: uuidv4 } = require("uuid")
+const FileCleanupManager = require("../utils/fileCleanup");
 const safeParse = (val, fallback = null) => {
   if (typeof val === 'object') return val;
   try {
@@ -25,11 +25,11 @@ const validateCoordinates = (lat, lng) => {
   const numLat = Number(lat);
   const numLng = Number(lng);
   return (
-    !isNaN(numLat) && 
-    !isNaN(numLng) && 
-    numLat >= -90 && 
-    numLat <= 90 && 
-    numLng >= -180 && 
+    !isNaN(numLat) &&
+    !isNaN(numLng) &&
+    numLat >= -90 &&
+    numLat <= 90 &&
+    numLng >= -180 &&
     numLng <= 180
   );
 };
@@ -45,7 +45,7 @@ const sanitizeInput = (input) => {
 exports.createListing = async (req, res) => {
   const session = await Listing.startSession();
   session.startTransaction();
-  
+
   let cloudinaryPublicIds = []; // Track uploaded files for rollback
   let tempFiles = []; // Track temp files for cleanup
 
@@ -63,11 +63,11 @@ exports.createListing = async (req, res) => {
       }
     });
 
-    const { 
-      title, 
-      description, 
-      owner, 
-      agent, 
+    const {
+      title,
+      description,
+      owner,
+      agent,
       contactInfo,
       propertyFor = 'Sell'
     } = sanitizedBody;
@@ -231,7 +231,7 @@ exports.createListing = async (req, res) => {
     };
 
     const listing = new Listing(listingData);
-    
+
     // Validate against Mongoose schema before saving
     const validationError = listing.validateSync();
     if (validationError) {
@@ -274,7 +274,7 @@ exports.createListing = async (req, res) => {
     if (cloudinaryPublicIds.length > 0) {
       try {
         await Promise.all(
-          cloudinaryPublicIds.map(publicId => 
+          cloudinaryPublicIds.map(publicId =>
             cloudinary.uploader.destroy(publicId)
           )
         );
@@ -367,8 +367,6 @@ exports.getListingByFilter = async (req, res) => {
       // Pagination
       page = 1,
       limit = 20,
-      
-      // Basic filters
       propertyType,
       propertyFor,
       minPrice,
@@ -379,7 +377,7 @@ exports.getListingByFilter = async (req, res) => {
       maxBathrooms,
       minSize,
       maxSize,
-      
+
       // Location filters
       state,
       city,
@@ -388,7 +386,7 @@ exports.getListingByFilter = async (req, res) => {
       latitude,
       longitude,
       radius = 10, // in kilometers
-      
+
       // Advanced filters
       amenities,
       priceType,
@@ -399,20 +397,20 @@ exports.getListingByFilter = async (req, res) => {
       maxFloors,
       minParking,
       maxParking,
-      
+
       // Status and visibility
       status = 'active',
       isFeatured,
       isPremium,
       visibility = 'public',
-      
+
       // Search
       search,
-      
+
       // Sorting
       sortBy = 'listedAt',
       sortOrder = 'desc',
-      
+
       // Agent/Owner filters
       owner,
       agent
@@ -420,19 +418,20 @@ exports.getListingByFilter = async (req, res) => {
 
     // Build filter object
     const filter = {};
-    
+
     // Status and visibility filters
     filter.status = status;
     filter.visibility = visibility;
 
     // Property type filters
     if (propertyType) {
-      filter['propertyType.category'] = propertyType;
+      filter['propertyType.subType'] = propertyType;
     }
-    
+
     if (propertyFor) {
       filter.propertyFor = propertyFor;
     }
+
 
     // Price range filter
     if (minPrice || maxPrice) {
@@ -440,6 +439,8 @@ exports.getListingByFilter = async (req, res) => {
       if (minPrice) filter['price.amount'].$gte = parseFloat(minPrice);
       if (maxPrice) filter['price.amount'].$lte = parseFloat(maxPrice);
     }
+
+
 
     // Bedrooms filter
     if (minBedrooms || maxBedrooms) {
@@ -532,10 +533,10 @@ exports.getListingByFilter = async (req, res) => {
     // Build sort object
     const sortOptions = {};
     const allowedSortFields = [
-      'price.amount', 'listedAt', 'views', 'favoritesCount', 
+      'price.amount', 'listedAt', 'views', 'favoritesCount',
       'details.size', 'details.bedrooms', 'details.bathrooms'
     ];
-    
+
     if (allowedSortFields.includes(sortBy)) {
       sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
     } else {
@@ -556,10 +557,10 @@ exports.getListingByFilter = async (req, res) => {
         .skip(skip)
         .limit(limitNum)
         .lean(), // For better performance
-      
+
       // Get total count for pagination
       Listing.countDocuments(filter),
-      
+
       // Get featured count for UI purposes
       Listing.countDocuments({ ...filter, isFeatured: true })
     ]);

@@ -68,6 +68,8 @@ const Page = () => {
         { id: 'high-speed-internet', label: 'High-Speed Internet', icon: FaWifi, color: 'text-purple-500' },
         { id: 'smart-home', label: 'Smart Home', icon: FaHome, color: 'text-green-500' },
     ];
+    
+    // constants/propertyTypes.js
     const propertyTypes = {
         Residential: [
             { id: "apartment", label: "Apartment", category: "Residential", icon: FaBuilding, color: "blue" },
@@ -83,6 +85,8 @@ const Page = () => {
             { id: "industrial-plot", label: "Industrial Plot", icon: FaBuilding, color: "green", category: "Plot" }
         ]
     };
+
+    module.exports = { PROPERTY_TYPES, POPULAR_PROPERTY_TYPES };
     const PropertyButton = ({ property, isSelected, handlePropertySelect }) => {
         const IconComponent = property.icon;
 
