@@ -1,7 +1,5 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useGoogleLogin } from "@react-oauth/google";
 import CustomToast from "../components/SideComponents/CustomToast";
@@ -38,6 +36,7 @@ const SignUpPage = () => {
     // ✅ Handle Signup
     const handleSignUp = async (e) => {
         e.preventDefault();
+
         if (!validateFields()) {
             setToast({ type: "error", message: "Please fill all required fields." });
             return;
@@ -68,11 +67,21 @@ const SignUpPage = () => {
                 return;
             }
 
+            // ✅ Save userId & email in sessionStorage
+            if (data.userId && Email) {
+                sessionStorage.setItem("unverfIedUserId", data.userId);
+                sessionStorage.setItem("userEmail", Email);
+            }
+
             setToast({ type: "success", message: data.message || "Signup successful" });
+
+            // ✅ Reset form fields
             setEmail("");
             setPassword("");
             setUserName("");
-            router.push(`/OtpVerification/${data.userId}`);
+
+            // ✅ Redirect to verify page
+            router.push("/verify");
         } catch (err) {
             if (err.name !== "AbortError") {
                 console.error(err);
@@ -82,6 +91,7 @@ const SignUpPage = () => {
             setLoading(false);
         }
     };
+
 
     // ✅ Google Signup/Login
     const googleSignUp = useGoogleLogin({
@@ -165,8 +175,8 @@ const SignUpPage = () => {
                                     value={userName}
                                     onChange={(e) => setUserName(e.target.value)}
                                     className={`w-full pl-12 pr-4 py-3.5 border-2 rounded-xl transition-all duration-200 outline-none ${Errors.userName
-                                            ? "border-red-400 bg-red-50 focus:border-red-500 focus:ring-4 focus:ring-red-100"
-                                            : "border-gray-200 bg-gray-50 hover:border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                        ? "border-red-400 bg-red-50 focus:border-red-500 focus:ring-4 focus:ring-red-100"
+                                        : "border-gray-200 bg-gray-50 hover:border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                                         }`}
                                     placeholder="Choose a username"
                                 />
@@ -198,8 +208,8 @@ const SignUpPage = () => {
                                     value={Email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className={`w-full pl-12 pr-4 py-3.5 border-2 rounded-xl transition-all duration-200 outline-none ${Errors.Email
-                                            ? "border-red-400 bg-red-50 focus:border-red-500 focus:ring-4 focus:ring-red-100"
-                                            : "border-gray-200 bg-gray-50 hover:border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                        ? "border-red-400 bg-red-50 focus:border-red-500 focus:ring-4 focus:ring-red-100"
+                                        : "border-gray-200 bg-gray-50 hover:border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                                         }`}
                                     placeholder="you@example.com"
                                 />
@@ -231,8 +241,8 @@ const SignUpPage = () => {
                                     value={Password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className={`w-full pl-12 pr-12 py-3.5 border-2 rounded-xl transition-all duration-200 outline-none ${Errors.Password
-                                            ? "border-red-400 bg-red-50 focus:border-red-500 focus:ring-4 focus:ring-red-100"
-                                            : "border-gray-200 bg-gray-50 hover:border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                        ? "border-red-400 bg-red-50 focus:border-red-500 focus:ring-4 focus:ring-red-100"
+                                        : "border-gray-200 bg-gray-50 hover:border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                                         }`}
                                     placeholder="Create a strong password"
                                 />

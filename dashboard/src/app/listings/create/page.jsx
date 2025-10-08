@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from "react";
-import { FaHome, FaBuilding, FaCity, FaTree, FaMapMarkerAlt, FaChevronRight, FaCheck, FaMap, FaRulerCombined, FaExpand, FaDollarSign, FaExclamationTriangle, FaEye, FaChevronLeft, FaImages, FaCloudUploadAlt, FaVideo, FaPlus, FaImage, FaLightbulb, FaSun, FaVectorSquare, FaTrash, FaGripVertical, FaPlay, FaStar, FaBath, FaBed, FaSignature, FaUmbrellaBeach, FaFire, FaSwimmingPool, FaUtensils, FaSoap, FaMicrophone, FaSnowflake, FaThermometerHalf, FaTshirt, FaShieldAlt, FaLock, FaCar, FaWarehouse, FaChair, FaCouch, FaPaw, FaWheelchair, FaWifi, FaSeedling, FaEdit, FaChevronDown, FaHeart, FaTag, FaHandshake } from "react-icons/fa";
+import { FaHome, FaBuilding, FaCity, FaTree, FaMapMarkerAlt, FaChevronRight, FaCheck, FaMap, FaRulerCombined, FaExpand, FaDollarSign, FaExclamationTriangle, FaEye, FaChevronLeft, FaImages, FaCloudUploadAlt, FaVideo, FaPlus, FaImage, FaLightbulb, FaSun, FaVectorSquare, FaTrash, FaGripVertical, FaPlay, FaStar, FaBath, FaBed, FaSignature, FaUmbrellaBeach, FaFire, FaSwimmingPool, FaUtensils, FaSoap, FaMicrophone, FaSnowflake, FaThermometerHalf, FaTshirt, FaShieldAlt, FaLock, FaCar, FaWarehouse, FaChair, FaCouch, FaPaw, FaWheelchair, FaWifi, FaSeedling, FaEdit, FaChevronDown, FaHeart, FaTag, FaHandshake, FaIndustry } from "react-icons/fa";
 import { US_STATES, US_CITIES } from "../../../utils/usData"
 import MuiDropdown from "@/app/components/MuiDropdown";
 import CustomToast from "@/app/components/CustomToast";
@@ -68,25 +68,35 @@ const Page = () => {
         { id: 'high-speed-internet', label: 'High-Speed Internet', icon: FaWifi, color: 'text-purple-500' },
         { id: 'smart-home', label: 'Smart Home', icon: FaHome, color: 'text-green-500' },
     ];
-    
+
     // constants/propertyTypes.js
     const propertyTypes = {
         Residential: [
-            { id: "apartment", label: "Apartment", category: "Residential", icon: FaBuilding, color: "blue" },
-            { id: "house", label: "House", category: "Residential", icon: FaHome, color: "blue" },
-            { id: "villa", label: "Villa", category: "Residential", icon: FaCity, color: "blue" },
-            { id: "condo", label: "Condo", category: "Residential", icon: FaBuilding, color: "blue" },
-            { id: "townhouse", label: "Townhouse", category: "Residential", icon: FaHome, color: "blue" }
+            { id: "apartment", label: "Apartment", category: "Residential", icon: FaBuilding },
+            { id: "house", label: "House", category: "Residential", icon: FaHome },
+            { id: "villa", label: "Villa", category: "Residential", icon: FaCity },
+            { id: "condo", label: "Condo", category: "Residential", icon: FaBuilding },
+            { id: "townhouse", label: "Townhouse", category: "Residential", icon: FaHome },
         ],
         Plot: [
-            { id: "commercial-plot", label: "Commercial Plot", icon: FaMapMarkerAlt, color: "green", category: "Plot" },
-            { id: "residential-plot", label: "Residential Plot", icon: FaTree, color: "green", category: "Plot" },
-            { id: "agricultural-plot", label: "Agricultural Plot", icon: FaTree, color: "green", category: "Plot" },
-            { id: "industrial-plot", label: "Industrial Plot", icon: FaBuilding, color: "green", category: "Plot" }
-        ]
+            { id: "commercial-plot", label: "Commercial Plot", category: "Plot", icon: FaMapMarkerAlt },
+            { id: "residential-plot", label: "Residential Plot", category: "Plot", icon: FaTree },
+            { id: "agricultural-plot", label: "Agricultural Plot", category: "Plot", icon: FaTree },
+            { id: "industrial-plot", label: "Industrial Plot", category: "Plot", icon: FaBuilding },
+        ],
+        Commercial: [
+            { id: "office", label: "Office", category: "Commercial", icon: FaBuilding },
+            { id: "shop", label: "Shop", category: "Commercial", icon: FaMapMarkerAlt },
+            { id: "mall", label: "Mall", category: "Commercial", icon: FaCity },
+            { id: "restaurant", label: "Restaurant", category: "Commercial", icon: FaBuilding },
+        ],
+        Industrial: [
+            { id: "factory", label: "Factory", category: "Industrial", icon: FaIndustry },
+            { id: "warehouse", label: "Warehouse", category: "Industrial", icon: FaWarehouse },
+            { id: "plant", label: "Plant", category: "Industrial", icon: FaIndustry },
+        ],
     };
 
-    module.exports = { PROPERTY_TYPES, POPULAR_PROPERTY_TYPES };
     const PropertyButton = ({ property, isSelected, handlePropertySelect }) => {
         const IconComponent = property.icon;
 
@@ -697,102 +707,91 @@ const Page = () => {
             )}
 
             {/* Property Type: */}
-            {currentStep === 1 && <div className="flex flex-col max-w-6xl w-[95%] mx-auto py-8">
-                {/* Header Section */}
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                        What kind of property do you have?
-                    </h1>
-                    <p className="text-gray-600 text-lg">
-                        Select the category that best describes your property
-                    </p>
-                </div>
-
-                {/* Main Content Card */}
-                <div className="section rounded-3xl bg-white shadow-xl border border-gray-200 p-8 transition-all duration-300 hover:shadow-2xl">
-                    {/* Tab Navigation */}
-                    <div className="flex space-x-1 bg-gray-100 rounded-2xl  p-2 mb-8 max-w-md mx-auto">
-                        {Object.keys(propertyTypes).map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => {
-                                    setActiveTab(tab);
-                                    setSelectedProperty("");
-                                }}
-                                className={`flex-1 py-4 px-6 rounded-[50px] font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === tab
-                                    ? "bg-blue-600 text-white shadow-md"
-                                    : "text-gray-600 hover:text-gray-900 hover:bg-white"
-                                    }`}
-
-                            >
-                                {tab === "Residential" ? <FaHome /> : <FaTree />}
-                                {tab}
-                            </button>
-                        ))}
+            {currentStep === 1 && (
+                <div className="flex flex-col max-w-6xl w-[95%] mx-auto py-8">
+                    {/* Header */}
+                    <div className="text-center mb-8">
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">What kind of property do you have?</h1>
+                        <p className="text-gray-600 text-lg">Select the category that best describes your property</p>
                     </div>
-
-                    {/* Property Options Grid */}
-                    <div className="mb-8">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-6 text-center">
-                            Select Property Type
-                        </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 justify-center">
-                            {propertyTypes[activeTab].map((property) => (
-                                <PropertyButton
-                                    key={property.id}
-                                    property={property}
-                                    isSelected={selectedProperty === property.id}
-                                />
+                    {/* Main Card */}
+                    <div className="section rounded-3xl bg-white shadow-xl border border-gray-200 p-8 transition-all duration-300 hover:shadow-2xl">
+                        {/* Tabs */}
+                        <div className="overflow-x-auto flex  space-x-1 bg-gray-100 rounded-2xl p-2 mb-8 mx-auto">
+                            {Object.keys(propertyTypes).map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => { setActiveTab(tab); setSelectedProperty(""); }}
+                                    className={`flex-1 min-w-[150px] cursor-pointer py-4 px-6 rounded-[50px] font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === tab
+                                        ? "bg-blue-600 text-white shadow-md"
+                                        : "text-gray-600 hover:text-gray-900 hover:bg-white"
+                                        }`}
+                                >
+                                    {tab === "Residential" && <FaHome />}
+                                    {tab === "Plot" && <FaTree />}
+                                    {tab === "Commercial" && <FaBuilding />}
+                                    {tab === "Industrial" && <FaIndustry />}
+                                    {tab}
+                                </button>
                             ))}
                         </div>
-                    </div>
 
-                    {/* Selected Property Display */}
-                    {selectedProperty && (
-                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl p-6 mb-6 border border-blue-200">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-3 rounded-full bg-blue-100">
-                                        {React.createElement(
-                                            propertyTypes[activeTab].find(p => p.id === selectedProperty)?.icon,
-                                            { className: "text-blue-600" }
-                                        )}
-                                    </div>
-                                    <div>
-                                        <h4 className="font-semibold text-gray-900">Selected Property</h4>
-                                        <p className="text-gray-600">
-                                            {propertyTypes[activeTab].find(p => p.id === selectedProperty)?.label}
-                                        </p>
-                                    </div>
-                                </div>
-                                <button onClick={() => { setCurrentStep(2) }} className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-[50px] hover:bg-blue-700 transition-colors">
-                                    Continue <FaChevronRight />
-                                </button>
+                        {/* Property Grid */}
+                        <div className="mb-8">
+                            <h3 className="text-xl font-semibold text-gray-800 mb-6 text-center">Select Property Type</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 justify-center">
+                                {propertyTypes[activeTab].map((property) => (
+                                    <PropertyButton
+                                        key={property.id}
+                                        property={property}
+                                        isSelected={selectedProperty === property.id}
+                                        handlePropertySelect={setSelectedProperty}
+                                    />
+                                ))}
                             </div>
                         </div>
-                    )}
 
+                        {/* Selected Property */}
+                        {selectedProperty && (
+                            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl p-6 mb-6 border border-blue-200">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-3 rounded-full bg-blue-100">
+                                            {React.createElement(
+                                                propertyTypes[activeTab].find(p => p.id === selectedProperty)?.icon,
+                                                { className: "text-blue-600" }
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900">Selected Property</h4>
+                                            <p className="text-gray-600">
+                                                {propertyTypes[activeTab].find(p => p.id === selectedProperty)?.label}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setCurrentStep(2)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-[50px] hover:bg-blue-700 transition-colors"
+                                    >
+                                        Continue <FaChevronRight />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
-                    {/* Progress Indicator */}
-                    <div className="flex items-center justify-center gap-2">
-                        <div className="flex gap-1">
-                            {[1, 2, 3, 4].map((step) => (
-                                <div
-                                    key={step}
-                                    className={`w-2 h-2 rounded-full transition-all ${step === 1
-                                        ? "bg-blue-600 w-8"
-                                        : "bg-gray-300"
-                                        }`}
-                                />
-                            ))}
+                        {/* Step Indicator */}
+                        <div className="flex items-center justify-center gap-2">
+                            <div className="flex gap-1">
+                                {[1, 2, 3, 4].map(step => (
+                                    <div key={step} className={`w-2 h-2 rounded-full transition-all ${step === 1 ? "bg-blue-600 w-8" : "bg-gray-300"}`} />
+                                ))}
+                            </div>
+                            <span className="text-sm text-gray-500 ml-2">Step 1 of 4</span>
                         </div>
-                        <span className="text-sm text-gray-500 ml-2">Step 1 of 4</span>
                     </div>
                 </div>
+            )}
 
-                {/* Details Sections */}
-
-            </div>}
             {/* Address Size & Price: */}
             {currentStep === 2 && (
                 <div className="flex flex-col max-w-4xl w-[95%] mx-auto py-8">

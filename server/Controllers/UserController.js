@@ -54,7 +54,6 @@ exports.signUp = async (req, res) => {
 exports.verifyEmail = async (req, res) => {
     try {
         const { userId, otp } = req.body;
-
         if (!ObjectId.isValid(userId)) {
             return res.status(400).json({ success: false, message: "Invalid User ID." });
         }

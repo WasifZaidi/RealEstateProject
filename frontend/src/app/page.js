@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Homelisting from "./components/Homelisting";
 import "./globals.css"
 import About from "./components/About";

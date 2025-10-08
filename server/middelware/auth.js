@@ -4,7 +4,6 @@ const User = require("../Model/User");
 // ✅ Role → Model Map (easily extendable)
 const ROLE_MODEL_MAP = {
   user: User,
-  // admin: Admin, // you can add more later
 };
 
 // ============================

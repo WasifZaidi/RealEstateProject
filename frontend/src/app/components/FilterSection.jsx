@@ -4,11 +4,6 @@ import {
   ChevronDown,
   X,
   Home,
-  Building2,
-  Building,
-  Castle,
-  Store,
-  Trees,
   DollarSign,
   Bed,
   Bath,
@@ -16,6 +11,7 @@ import {
   Check,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { FaBuilding, FaCity, FaHome, FaIndustry, FaMapMarkedAlt, FaTree, FaWarehouse } from 'react-icons/fa';
 
 
 const FilterSection = ({ onApplyFilters }) => {
@@ -44,7 +40,7 @@ const FilterSection = ({ onApplyFilters }) => {
   const [activeModal, setActiveModal] = useState(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-
+  const [activePropertyCategory,  setActivePropertyCategory] = useState("Residential")
 
   const modalsThatRequireApply = new Set(['price', 'more']);
 
@@ -157,19 +153,37 @@ const FilterSection = ({ onApplyFilters }) => {
 
 
 
-  const propertyTypes = [
-    { value: 'residential', label: 'House', icon: Home },
-    { value: 'apartment', label: 'Apartment', icon: Building2 },
-    { value: 'condo', label: 'Condo', icon: Building },
-    { value: 'villa', label: 'Villa', icon: Castle },
-    { value: 'commercial', label: 'Commercial', icon: Store },
-    { value: 'land', label: 'Land', icon: Trees }
-  ];
 
+ const propertyTypes = {
+        Residential: [
+            { id: "apartment", label: "Apartment", category: "Residential", icon: FaBuilding },
+            { id: "house", label: "House", category: "Residential", icon: FaHome },
+            { id: "villa", label: "Villa", category: "Residential", icon: FaCity },
+            { id: "condo", label: "Condo", category: "Residential", icon: FaBuilding },
+            { id: "townhouse", label: "Townhouse", category: "Residential", icon: FaHome },
+        ],
+        Plot: [
+            { id: "commercial-plot", label: "Commercial Plot", category: "Plot", icon: FaMapMarkedAlt },
+            { id: "residential-plot", label: "Residential Plot", category: "Plot", icon: FaTree },
+            { id: "agricultural-plot", label: "Agricultural Plot", category: "Plot", icon: FaTree },
+            { id: "industrial-plot", label: "Industrial Plot", category: "Plot", icon: FaBuilding },
+        ],
+        Commercial: [
+            { id: "office", label: "Office", category: "Commercial", icon: FaBuilding },
+            { id: "shop", label: "Shop", category: "Commercial", icon: FaMapMarkedAlt },
+            { id: "mall", label: "Mall", category: "Commercial", icon: FaCity },
+            { id: "restaurant", label: "Restaurant", category: "Commercial", icon: FaBuilding },
+        ],
+        Industrial: [
+            { id: "factory", label: "Factory", category: "Industrial", icon: FaIndustry },
+            { id: "warehouse", label: "Warehouse", category: "Industrial", icon: FaWarehouse },
+            { id: "plant", label: "Plant", category: "Industrial", icon: FaIndustry },
+        ],
+    };
   const propertyForOptions = [
-    { value: 'sale', label: 'For Sale' },
-    { value: 'rent', label: 'For Rent' },
-    { value: 'lease', label: 'For Lease' }
+    { value: 'Sell', label: 'For Sell' },
+    { value: 'Rent', label: 'For Rent' },
+    { value: 'Lease', label: 'For Lease' }
   ];
 
   const amenitiesOptions = [
@@ -243,7 +257,8 @@ const FilterSection = ({ onApplyFilters }) => {
   const getFilterLabel = (filterKey) => {
     switch (filterKey) {
       case 'propertyType':
-        return propertyTypes.find(t => t.value === filters.propertyType)?.label || 'Type';
+              const allTypes = Object.values(propertyTypes).flat();
+      return allTypes.find(t => t.id === filters.propertyType)?.label || 'Type';
       case 'propertyFor':
         return propertyForOptions.find(o => o.value === filters.propertyFor)?.label || 'For';
       case 'price':
@@ -404,30 +419,57 @@ const FilterSection = ({ onApplyFilters }) => {
               <div className="overflow-y-auto flex-1">
                 <div className="p-6">
                   {/* PROPERTY TYPE (instant apply) */}
-                  {activeModal === 'propertyType' && (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {propertyTypes.map((type) => {
-                          const Icon = type.icon;
-                          return (
-                            <button
-                              key={type.value}
-                              onClick={() => applyImmediate({ propertyType: type.value })}
-                              className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all ${filters.propertyType === type.value
-                                ? 'border-gray-900 bg-gray-50'
-                                : 'border-gray-200 hover:border-gray-300'
-                                }`}
-                            >
-                              <Icon className={`h-6 w-6 ${filters.propertyType === type.value ? 'text-gray-900' : 'text-gray-500'}`} />
-                              <span className={`text-sm font-medium ${filters.propertyType === type.value ? 'text-gray-900' : 'text-gray-600'}`}>
-                                {type.label}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                  {/* PROPERTY TYPE (instant apply with category toggler) */}
+{activeModal === 'propertyType' && (
+  <div className="space-y-4">
+    {/* Category Tabs */}
+    <div className="flex flex-wrap gap-2 mb-4">
+      {Object.keys(propertyTypes).map((category) => (
+        <button
+          key={category}
+          onClick={() => setActivePropertyCategory(category)}
+          className={`px-4 py-2 rounded-full font-medium transition-all ${
+            activePropertyCategory === category
+              ? 'bg-blue-600 text-white shadow-lg'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          {category}
+        </button>
+      ))}
+    </div>
+
+    {/* Property Type Grid */}
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {propertyTypes[activePropertyCategory].map((type) => {
+        const Icon = type.icon;
+        const isSelected = filters.propertyType === type.id;
+        return (
+          <button
+            key={type.id}
+            onClick={() => applyImmediate({ propertyType: type.id })}
+            className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all w-full ${
+              isSelected
+                ? 'border-gray-900 bg-gray-50'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <Icon
+              className={`h-6 w-6 ${isSelected ? 'text-gray-900' : 'text-gray-500'}`}
+            />
+            <span
+              className={`text-sm font-medium ${
+                isSelected ? 'text-gray-900' : 'text-gray-600'
+              }`}
+            >
+              {type.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  </div>
+)}
 
                   {/* PROPERTY FOR (instant) */}
                   {activeModal === 'propertyFor' && (

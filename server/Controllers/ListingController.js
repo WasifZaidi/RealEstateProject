@@ -418,6 +418,16 @@ exports.getListingByFilter = async (req, res) => {
 
     // Build filter object
     const filter = {};
+    const userId = req.user?.id;
+    let savedListingIds = [];
+
+    if (userId) {
+      const userWishlist = await Wishlist.find({ user: userId })
+        .select("listing -_id")
+        .lean();
+      savedListingIds = userWishlist.map(w => w.listing.toString());
+    }
+
 
     // Status and visibility filters
     filter.status = status;
@@ -570,11 +580,17 @@ exports.getListingByFilter = async (req, res) => {
     const hasNextPage = pageNum < totalPages;
     const hasPrevPage = pageNum > 1;
 
+
+    const listingsDataComplete = listings.map(listing => ({
+      ...listing,
+      isSaved: savedListingIds.includes(listing._id.toString())
+    }));
+
     // Response structure
     const response = {
       success: true,
       data: {
-        listings,
+        listings: listingsDataComplete,
         pagination: {
           currentPage: pageNum,
           totalPages,

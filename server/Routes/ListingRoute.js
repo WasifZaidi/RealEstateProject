@@ -10,6 +10,7 @@ const {
 } = require("../middelware/validation/listingSchemas");
 const router = express.Router();
 const rateLimit = require("express-rate-limit");
+const { optionalAuth } = require("../middelware/optionalAuth");
 const createListingLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // Limit each IP to 5 listing creations per windowMs
@@ -56,6 +57,7 @@ router.get(
 
 router.get(
   "/results/filters",
+   optionalAuth("user_token_realEstate"),
   validateRequest(filterListingSchema, 'query'),
   ListingController.getListingByFilter
 );
