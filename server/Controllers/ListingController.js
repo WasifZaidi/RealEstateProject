@@ -2,6 +2,7 @@
 // controllers/listingController.js
 
 const Listing = require("../Model/Listing");
+const Meeting = require("../Model/Meeting")
 const cloudinary = require("../utils/cloudinary");
 const { v4: uuidv4 } = require("uuid")
 const FileCleanupManager = require("../utils/fileCleanup");
@@ -330,35 +331,56 @@ exports.createListing = async (req, res) => {
 exports.getListingById = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log("hello it calls")
+    const userId = req.user?.id;
+    console.log("userId", userId)
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid or missing listing ID",
+        message: "Invalid or missing listing ID.",
       });
     }
-    const listing = await Listing.findById(id)
-      .lean();
+
+    // 2️⃣ Fetch listing
+    const listing = await Listing.findById(id).lean();
     if (!listing) {
       return res.status(404).json({
         success: false,
-        message: "Listing not found",
+        message: "Listing not found.",
       });
     }
+
+    // 3️⃣ Check if user has a scheduled tour for this listing
+    const existingTour = await Meeting.exists({
+      client: userId,
+      listing: id,
+      status: "Scheduled",
+    });
+    
+
+    // 4️⃣ Add flag to response
+    const listingWithStatus = {
+      ...listing,
+      isScheduledTour: !!existingTour,
+    };
+    
+
+    // 5️⃣ Success response
     return res.status(200).json({
       success: true,
-      message: "Listing fetched successfully",
-      listing,
+      message: "Listing fetched successfully.",
+      listing: listingWithStatus,
     });
+
   } catch (error) {
-    console.error("Error fetching listing by ID:", error);
+    console.error("❌ Error fetching listing by ID:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error while fetching listing",
+      message: "Server error while fetching listing.",
       error: error.message,
     });
   }
 };
+
 
 // Get listing by filters
 exports.getListingByFilter = async (req, res) => {

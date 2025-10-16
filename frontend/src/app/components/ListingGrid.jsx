@@ -93,7 +93,7 @@ const ListingCard = ({ listing }) => {
 
   return (
     <div className="card group rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-300">
-      <Link href={`/properties/${listing._id}`}>
+      <Link href={`/details/${listing._id}`}>
         <div className="img_box relative h-48 sm:h-52 md:h-56 overflow-hidden">
           {!listing.media && !listing.media[0] ? (
             <Image

@@ -220,6 +220,7 @@ export default function SavedListingsPage() {
                 setSelectedForCompare={setSelectedForCompare}
               />
             ))}
+            
           </div>
 
           {/* Pagination */}

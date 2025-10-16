@@ -1,7 +1,7 @@
 "use client"
 import React, { useEffect, useState } from "react";
 import { FaHome, FaBuilding, FaCity, FaTree, FaMapMarkerAlt, FaChevronRight, FaCheck, FaMap, FaRulerCombined, FaExpand, FaDollarSign, FaExclamationTriangle, FaEye, FaChevronLeft, FaImages, FaCloudUploadAlt, FaVideo, FaPlus, FaImage, FaLightbulb, FaSun, FaVectorSquare, FaTrash, FaGripVertical, FaPlay, FaStar, FaBath, FaBed, FaSignature, FaUmbrellaBeach, FaFire, FaSwimmingPool, FaUtensils, FaSoap, FaMicrophone, FaSnowflake, FaThermometerHalf, FaTshirt, FaShieldAlt, FaLock, FaCar, FaWarehouse, FaChair, FaCouch, FaPaw, FaWheelchair, FaWifi, FaSeedling, FaEdit, FaChevronDown, FaHeart, FaTag, FaHandshake, FaIndustry } from "react-icons/fa";
-import { US_STATES, US_CITIES } from "../../../utils/usData"
+import { US_STATES, US_CITIES } from "../../../../utils/usData"
 import MuiDropdown from "@/app/components/MuiDropdown";
 import CustomToast from "@/app/components/CustomToast";
 import { useRef } from "react";
@@ -717,24 +717,27 @@ const Page = () => {
                     {/* Main Card */}
                     <div className="section rounded-3xl bg-white shadow-xl border border-gray-200 p-8 transition-all duration-300 hover:shadow-2xl">
                         {/* Tabs */}
-                        <div className="overflow-x-auto flex  space-x-1 bg-gray-100 rounded-2xl p-2 mb-8 mx-auto">
-                            {Object.keys(propertyTypes).map((tab) => (
-                                <button
-                                    key={tab}
-                                    onClick={() => { setActiveTab(tab); setSelectedProperty(""); }}
-                                    className={`flex-1 min-w-[150px] cursor-pointer py-4 px-6 rounded-[50px] font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === tab
-                                        ? "bg-blue-600 text-white shadow-md"
-                                        : "text-gray-600 hover:text-gray-900 hover:bg-white"
-                                        }`}
-                                >
-                                    {tab === "Residential" && <FaHome />}
-                                    {tab === "Plot" && <FaTree />}
-                                    {tab === "Commercial" && <FaBuilding />}
-                                    {tab === "Industrial" && <FaIndustry />}
-                                    {tab}
-                                </button>
-                            ))}
-                        </div>
+                     <div className="overflow-x-auto flex space-x-1 bg-gray-100 rounded-2xl p-2 mb-8 mx-auto">
+  {Object.keys(propertyTypes).map((tab) => (
+    <button
+      key={tab}
+      onClick={() => { setActiveTab(tab); setSelectedProperty(""); }}
+      className={`flex-1 min-w-[150px] cursor-pointer py-4 px-6 rounded-[50px] font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
+        activeTab === tab
+          ? "bg-blue-600 text-white shadow-md"
+          : "text-gray-600 hover:text-gray-900 hover:bg-white"
+      }`}
+    >
+      <span className="flex-shrink-0">
+        {tab === "Residential" && <FaHome />}
+        {tab === "Plot" && <FaTree />}
+        {tab === "Commercial" && <FaBuilding />}
+        {tab === "Industrial" && <FaIndustry />}
+      </span>
+      {tab}
+    </button>
+  ))}
+</div>
 
                         {/* Property Grid */}
                         <div className="mb-8">

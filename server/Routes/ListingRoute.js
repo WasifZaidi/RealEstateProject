@@ -52,6 +52,7 @@ router.post(
 router.get(
   "/find/:id",
   validateRequest(idParamSchema, 'params'),
+   optionalAuth("user_token_realEstate"),
   ListingController.getListingById
 );
 

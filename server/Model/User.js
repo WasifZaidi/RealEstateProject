@@ -64,6 +64,7 @@ const userSchema = new mongoose.Schema({
     enum: ["local", "google"],
     default: "local"
   },
+  customId: { type: String, required: true },
 
   PhoneNumber: { type: String, required: false },
   Birthday: { type: birthdaySchema },
@@ -79,6 +80,7 @@ const userSchema = new mongoose.Schema({
   emailChangeVerified: { type: Boolean, default: false },
   emailChangeVerifiedAt: { type: Date },
   isVerified: { type: Boolean, default: false },
+  isVerifiedAgent: {type: Boolean, default: false},
 }, { timestamps: true });
 
 
@@ -106,7 +108,5 @@ userSchema.methods.getResetPasswordToken = function () {
   this.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
   return resetToken
 }
-
-userSchema.index({ Email: 1 }, { unique: true });
 
 module.exports = mongoose.model('User', userSchema);

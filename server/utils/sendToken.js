@@ -1,7 +1,8 @@
 const jwt = require("jsonwebtoken");
 
-const sendToken = (entity, role, res, message, cookieName) => {
+const sendToken = (entity, res, message, cookieName) => {
   // Create JWT with 7d expiry
+  const role = entity.role;
   const token = jwt.sign(
     { id: entity._id, role },
     process.env.JWT_SECRET,

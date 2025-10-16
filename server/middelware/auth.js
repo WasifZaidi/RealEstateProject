@@ -4,6 +4,8 @@ const User = require("../Model/User");
 // ✅ Role → Model Map (easily extendable)
 const ROLE_MODEL_MAP = {
   user: User,
+  admin: User,
+  manager: User,
 };
 
 // ============================
@@ -12,7 +14,6 @@ const ROLE_MODEL_MAP = {
 exports.isAuthenticated = (cookieName = "token") => {
   return async (req, res, next) => {
     const token = req.cookies[cookieName];
-
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -23,7 +24,7 @@ exports.isAuthenticated = (cookieName = "token") => {
     try {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded; // Always store decoded token payload
+      req.user = decoded; 
 
       const Model = ROLE_MODEL_MAP[decoded.role];
 

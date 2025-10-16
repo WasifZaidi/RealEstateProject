@@ -2,7 +2,7 @@ const User = require("../Model/User");
 const { sendEmail } = require('../utils/sendEmail');
 const sendToken = require("../utils/sendToken")
 const { ObjectId } = require("mongodb")
-
+const { nanoid } = require('nanoid');
 
 exports.signUp = async (req, res) => {
     try {
@@ -20,6 +20,8 @@ exports.signUp = async (req, res) => {
         // Generate OTP for email verification
         const otp = Math.floor(100000 + Math.random() * 900000);
 
+        // Custom Id
+        const customId = `${Date.now()}-${nanoid(6)}`
         const newUser = new User({
             userName,
             Email,
@@ -27,7 +29,8 @@ exports.signUp = async (req, res) => {
             otpCode: otp,
             otpExpire: Date.now() + 10 * 60 * 1000, // 10 min expiry
             isVerified: false,
-            loginProvider: "local"  // ✅ Explicitly mark as local signup
+            loginProvider: "local",
+            customId,
         });
 
         await newUser.save();
@@ -81,7 +84,7 @@ exports.verifyEmail = async (req, res) => {
 
         await user.save({ validateBeforeSave: false });
 
-        sendToken(user, "user", res, "Email Verified", "user_token_realEstate");
+      sendToken(user, res, "SignIn successful", "user_token_realEstate");
 
     } catch (err) {
         console.error(err);
@@ -118,8 +121,7 @@ exports.login = async (req, res) => {
         if (!user.isVerified) {
             return res.status(403).json({ success: false, message: "Please verify your account before logging in." });
         }
-
-        sendToken(user, "user", res, "Login successful", "user_token_realEstate");
+        sendToken(user, res, "SignIn successful", "user_token_realEstate");
     } catch (err) {
         console.error("Login Error:", err);
         return res.status(500).json({ success: false, message: "An error occurred. Please try again later." });
@@ -158,7 +160,7 @@ exports.googleLogin = async (req, res) => {
                 });
             }
 
-            return sendToken(user, "user", res, "Login successful", "user_token_realEstate");
+            return sendToken(user, res, "SignIn successful", "user_token_realEstate");
         }
 
         // Create new Google user
@@ -170,7 +172,7 @@ exports.googleLogin = async (req, res) => {
             isVerified: true,
         });
 
-        sendToken(user, "user", res, "Account created and logged in successfully", "user_token_realEstate");
+       sendToken(user, res, "SignIn successful", "user_token_realEstate");
     } catch (err) {
         console.error("Google Login Error:", err);
         res.status(500).json({ success: false, message: "An error occurred during Google login. Please try again later." });
@@ -180,6 +182,7 @@ exports.googleLogin = async (req, res) => {
 
 exports.getLoggedInUser = async (req, res) => {
     try {
+        console.log("api hits");
         if (!req.user) {
             return res.status(404).json({ success: false, message: "User not found" })
         }
@@ -253,7 +256,7 @@ exports.resetPassword = async (req, res) => {
         user.resetPasswordToken = undefined,
             user.resetPasswordExpire = undefined;
         await user.save();
-        sendToken(user, 200, res, "Password reset successful", "user_token_realEstate");
+        sendToken(user, res, "SignIn successful", "user_token_realEstate");
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -339,21 +342,21 @@ exports.verifyOtp = async (req, res) => {
 
 
 exports.matchUser = async (req, res) => {
-  const { Password } = req.body
-  const Email = req.user.Email
-  if (!Email) {
-    return res.status(401).json({ success: false, message: "Data is Missing" })
-  }
-  const user = await User.findOne({ Email })
-  if (!user) {
-    return res.status(401).json({ success: false, message: "Invalid Email or Password" })
-  }
-  const isMatch = await user.comparePassword(Password)
-  if (!isMatch) {
-    return res.status(401).json({ success: false, message: "Invalid Email or Password" })
-  }
-  user.emailChangeVerified = true;
-  user.emailChangeVerifiedAt = Date.now();
-  await user.save({ validateBeforeSave: false });
-  res.status(200).json({ success: true, user })
+    const { Password } = req.body
+    const Email = req.user.Email
+    if (!Email) {
+        return res.status(401).json({ success: false, message: "Data is Missing" })
+    }
+    const user = await User.findOne({ Email })
+    if (!user) {
+        return res.status(401).json({ success: false, message: "Invalid Email or Password" })
+    }
+    const isMatch = await user.comparePassword(Password)
+    if (!isMatch) {
+        return res.status(401).json({ success: false, message: "Invalid Email or Password" })
+    }
+    user.emailChangeVerified = true;
+    user.emailChangeVerifiedAt = Date.now();
+    await user.save({ validateBeforeSave: false });
+    res.status(200).json({ success: true, user })
 }

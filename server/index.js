@@ -66,6 +66,19 @@ const userRoutes = require("./Routes/UserRoute")
 app.use('/api', userRoutes )
 const wishlistRoutes = require("./Routes/WishlistRoute")
 app.use('/api', wishlistRoutes)
+const meetingRoutes = require("./Routes/MettingRoute")
+app.use('/api/meeting', meetingRoutes)
+// Dashboard Routes
+const accessorRoutes = require("./Routes/Dashboard/accessorRoute")
+app.use("/api/dashboard", accessorRoutes );
+// Agent Profile Routes
+const agentRoute = require("./Routes/Dashboard/agentRoute");
+app.use("/api/dashboard", agentRoute);
+
+const agentFrontendRoutes =  require("./Routes/AgentRoute");
+app.use("/api", agentFrontendRoutes);
+
+
 // Handle 404
 app.use((req, res, next) => {
   res.status(404).json({ success: false, message: "Route not found" });

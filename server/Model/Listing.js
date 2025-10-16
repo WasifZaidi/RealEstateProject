@@ -126,7 +126,7 @@ const listingSchema = new Schema({
     trim: true,
     maxlength: 5000
   },
-  
+
   // Property Classification
   propertyType: {
     category: {
@@ -154,28 +154,28 @@ const listingSchema = new Schema({
     type: String,
     required: true
   },
-  
+
   // Location
   location: {
     type: locationSchema,
     required: true
   },
-  
+
   // Pricing
   price: {
     type: pricingSchema,
     required: true
   },
-  
+
   // Property Details
   details: {
     type: propertyDetailsSchema,
     required: true
   },
-  
+
   // Media
   media: [mediaSchema],
-  
+
   // Amenities
   amenities: [{
     type: String,
@@ -189,7 +189,7 @@ const listingSchema = new Schema({
       'high-speed-internet', 'smart-home'
     ]
   }],
-  
+
   // Status and Visibility
   status: {
     type: String,
@@ -209,16 +209,17 @@ const listingSchema = new Schema({
     enum: ['public', 'private', 'unlisted'],
     default: 'public'
   },
-  
+
   // Ownership and Agent Info
   owner: {
     type: String,
     required: true
   },
   agent: {
-     type: String,
+    type: String,
     required: true
   },
+  agentId: { type: String, required: true, unique: true },
   contactInfo: {
     name: String,
     phone: String,
@@ -228,7 +229,7 @@ const listingSchema = new Schema({
       default: true
     }
   },
-  
+
   // Metadata
   views: {
     type: Number,
@@ -238,7 +239,7 @@ const listingSchema = new Schema({
     type: Number,
     default: 0
   },
-  
+
   // Timestamps
   listedAt: {
     type: Date,

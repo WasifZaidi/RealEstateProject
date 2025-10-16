@@ -1,6 +1,7 @@
 // app/details/[id]/page.js
 import MediaSection from "@/app/components/MediaSection";
 import React from "react";
+import { cookies } from "next/headers";
 import {
   MapPinIcon,
   HomeModernIcon,
@@ -12,15 +13,25 @@ import {
   CheckBadgeIcon,
 } from "@heroicons/react/24/outline";
 import ActionButtons from "@/app/components/ActionButtons";
+import Link from "next/link";
+import { CheckCircleIcon } from "lucide-react";
 
 async function getListing(id) {
+    const cookieStore = cookies();
+  const token = cookieStore.get("user_token_realEstate")?.value;
   try {
-    const res = await fetch(`http://localhost:3001/api/listings/find/68dd5969d20ab71025e7cfb9`, {
+   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/listings/find/${id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Cookie: `user_token_realEstate=${token}` } : {}),
+      },
       cache: "no-store",
     });
 
     if (!res.ok) return null;
     const data = await res.json();
+    console.log(data)
     return data.listing || null;
   } catch (err) {
     console.error("Error fetching listing:", err);
@@ -49,39 +60,39 @@ function formatDate(dateString) {
 // Key Details Component
 function KeyDetails({ details, propertyType }) {
   const detailItems = [
-    { 
-      icon: HomeModernIcon, 
-      label: 'Property Type', 
+    {
+      icon: HomeModernIcon,
+      label: 'Property Type',
       value: propertyType.subType,
       color: 'blue'
     },
-    { 
-      icon: BuildingOfficeIcon, 
-      label: 'Bedrooms', 
+    {
+      icon: BuildingOfficeIcon,
+      label: 'Bedrooms',
       value: details.bedrooms,
       color: 'purple'
     },
-    { 
-      icon: UserIcon, 
-      label: 'Bathrooms', 
+    {
+      icon: UserIcon,
+      label: 'Bathrooms',
       value: details.bathrooms,
       color: 'green'
     },
-    { 
-      icon: 'sqft', 
-      label: 'Square Feet', 
+    {
+      icon: 'sqft',
+      label: 'Square Feet',
       value: details.size?.toLocaleString(),
       color: 'orange'
     },
-    { 
-      icon: 'floor', 
-      label: 'Floors', 
+    {
+      icon: 'floor',
+      label: 'Floors',
       value: details.floors,
       color: 'red'
     },
-    { 
-      icon: 'parking', 
-      label: 'Parking', 
+    {
+      icon: 'parking',
+      label: 'Parking',
       value: details.parkingSpaces,
       color: 'indigo'
     },
@@ -98,7 +109,7 @@ function KeyDetails({ details, propertyType }) {
 
   const IconWrapper = ({ item }) => {
     const colors = colorMap[item.color];
-    
+
     if (item.icon === 'sqft') {
       return (
         <div className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.icon} rounded-lg flex items-center justify-center transition-all duration-200 group-hover:scale-105 flex-shrink-0`}>
@@ -130,16 +141,16 @@ function KeyDetails({ details, propertyType }) {
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 max-w-[970px] mx-auto w-full">
       <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1">Property details</h3>
       <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">Essential information about this property</p>
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
         {detailItems.map((item, index) => (
-          <div 
-            key={index} 
+          <div
+            key={index}
             className={`group relative ${colorMap[item.color].bg} rounded-xl p-3 sm:p-4 transition-all duration-200 hover:shadow-sm border ${colorMap[item.color].border} hover:border-gray-300 w-full overflow-hidden`}
           >
             <div className="flex items-center space-x-2 sm:space-x-3 w-full">
               <IconWrapper item={item} />
-              
+
               <div className="flex-1 min-w-0 overflow-hidden">
                 <span className="text-xs sm:text-sm font-medium text-gray-600 block leading-tight truncate">
                   {item.label}
@@ -149,7 +160,7 @@ function KeyDetails({ details, propertyType }) {
                 </span>
               </div>
             </div>
-            
+
             {/* Airbnb-style subtle hover effect */}
             <div className="absolute inset-0 rounded-xl bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-200 pointer-events-none" />
           </div>
@@ -195,7 +206,7 @@ function Amenities({ amenities }) {
 }
 
 // Contact Card Component
-function ContactCard({ agent, contactInfo, title, location, listing }) {
+function ContactCard({ id, agentId, isScheduledTour, agent, contactInfo, title, location, listing }) {
   return (
     <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 sticky top-6">
       <div className="text-center mb-6">
@@ -212,22 +223,33 @@ function ContactCard({ agent, contactInfo, title, location, listing }) {
         )}
       </div>
 
-      <div className="space-y-4">
-        <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-[50px] font-semibold transition-colors duration-200 flex items-center justify-center">
-          <PhoneIcon className="w-5 h-5 mr-2" />
-          Contact Agent
-        </button>
-        
-        <button className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 px-4 rounded-[50px] font-semibold transition-colors duration-200 flex items-center justify-center">
-          <EnvelopeIcon className="w-5 h-5 mr-2" />
-          Send Message
-        </button>
+   <div className="space-y-4">
+  <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-[50px] font-semibold transition-colors duration-200 flex items-center justify-center">
+    <PhoneIcon className="w-5 h-5 mr-2" />
+    Contact Agent
+  </button>
 
-        <button className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 px-4 rounded-[50px] font-semibold transition-colors duration-200 flex items-center justify-center">
-          <CalendarIcon className="w-5 h-5 mr-2" />
-          Schedule Tour
-        </button>
-      </div>
+  <button className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 px-4 rounded-[50px] font-semibold transition-colors duration-200 flex items-center justify-center">
+    <EnvelopeIcon className="w-5 h-5 mr-2" />
+    Send Message
+  </button>
+
+  {isScheduledTour ? (
+    <div className="w-full border border-green-400 bg-green-50 text-green-600 py-3 px-4 rounded-[50px] font-semibold flex items-center justify-center gap-2 shadow-sm transition-all duration-300">
+      <CheckCircleIcon className="w-5 h-5" />
+      <span>Tour Scheduled</span>
+    </div>
+  ) : (
+    <Link
+      href={`/meeting/Agt-zTkvD5LzRX/${id}`}
+      className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 px-4 rounded-[50px] font-semibold transition-colors duration-200 flex items-center justify-center"
+    >
+      <CalendarIcon className="w-5 h-5 mr-2" />
+      Schedule Tour
+    </Link>
+  )}
+</div>
+
 
       <div className="mt-6 pt-6 border-t border-gray-200">
         <div className="text-center text-sm text-gray-600">
@@ -243,7 +265,7 @@ function ContactCard({ agent, contactInfo, title, location, listing }) {
 
 
 export default async function ListingPage({ params }) {
-  const { id } = params;
+  const { id } = await params;
   const listing = await getListing(id);
 
   if (!listing) {
@@ -283,11 +305,11 @@ export default async function ListingPage({ params }) {
                   {listing.status}
                 </span>
               </div>
-              
+
               <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">
                 {listing.title}
               </h1>
-              
+
               <div className="flex items-center text-gray-600 mb-4">
                 <MapPinIcon className="w-5 h-5 mr-1" />
                 <span>{listing.location.city}, {listing.location.state}</span>
@@ -312,15 +334,15 @@ export default async function ListingPage({ params }) {
       <div className="container mx-auto px-4 py-8">
         {/* Media Section */}
         <div className="mb-8">
-          <MediaSection data={listing.media} />
+          {/* <MediaSection data={listing.media} /> */}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Key Details */}
-            <KeyDetails 
-              details={listing.details} 
+            <KeyDetails
+              details={listing.details}
               propertyType={listing.propertyType}
             />
 
@@ -391,12 +413,14 @@ export default async function ListingPage({ params }) {
 
           {/* Right Column - Contact Card */}
           <div className="lg:col-span-1">
-            <ContactCard 
+            <ContactCard
               agent={listing.agent}
+              isScheduledTour={listing.isScheduledTour}
               contactInfo={listing.contactInfo}
               title={listing.title}
               location={listing.location}
               listing={listing}
+              id={id}
             />
           </div>
         </div>
