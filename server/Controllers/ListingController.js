@@ -332,7 +332,6 @@ exports.getListingById = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user?.id;
-    console.log("userId", userId)
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({
         success: false,
@@ -421,7 +420,7 @@ exports.getListingByFilter = async (req, res) => {
       maxParking,
 
       // Status and visibility
-      status = 'active',
+      status = 'pending',
       isFeatured,
       isPremium,
       visibility = 'public',
@@ -452,7 +451,7 @@ exports.getListingByFilter = async (req, res) => {
 
 
     // Status and visibility filters
-    filter.status = status;
+    // filter.status = status;
     filter.visibility = visibility;
 
     // Property type filters

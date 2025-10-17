@@ -126,7 +126,7 @@ export default async function ResultsPage({ searchParams }) {
         {/* Main Content */}
         <div className="container mx-auto px-4 py-6">
           {/* Results Summary */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-wrap gap-y-[26px] items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Properties for Sale</h1>
               <p className="text-gray-600 mt-1">Showing 1,243 properties in your area</p>
