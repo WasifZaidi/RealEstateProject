@@ -107,6 +107,9 @@ svg {
 .normal_input.pl_9{
   padding-left: 2.25rem;
 }
+.normal_input.pl_2{
+  padding-left: 3rem;
+}
 /* Focus state */
 .normal_input:focus {
     border-color: #2563eb;

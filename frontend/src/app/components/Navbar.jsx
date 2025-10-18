@@ -451,7 +451,7 @@ const Navbar = ({ user }) => {
       </nav>
 
       {/* Spacer */}
-      {!isExcludedPage && <div className="h-16" />}
+      {!isExcludedPage && <div className="h-[90px]" />}
     </>
   );
 };

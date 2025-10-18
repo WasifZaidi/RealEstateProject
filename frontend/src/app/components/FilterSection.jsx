@@ -1,5 +1,7 @@
 "use client"
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Us_Data } from '@/constants/Us_Data';
+import MuiDropdown from "@/app/components/MuiDropdown";
 import {
   Home,
   DollarSign,
@@ -13,15 +15,16 @@ import {
   Building,
   MapPin,
   Map,
-  Ruler
+  Ruler,
+  Navigation,
+  Star, // Added for Neighborhood
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-// ===============================================
-// ENTERPRISE DATA & CONFIGURATION (Unchanged)
-// ===============================================
+
 
 const PROPERTY_TYPES = {
+  // ... (unchanged)
   Residential: [
     { id: "apartment", label: "Apartment", category: "Residential", icon: Building },
     { id: "house", label: "House", category: "Residential", icon: Home },
@@ -62,8 +65,8 @@ const AMENITIES_OPTIONS = [
 
 const NUM_OPTIONS = ['Any', '1', '2', '3', '4', '5+'];
 
-// Define which modals require explicit Apply button (multi-input, like price range)
-const MODALS_THAT_REQUIRE_APPLY = new Set(['price', 'bedrooms', 'bathrooms', 'more']);
+// MODALS_THAT_REQUIRE_APPLY: Added 'location' and changed 'more' to 'sizeOther'
+const MODALS_THAT_REQUIRE_APPLY = new Set(['price', 'bedrooms', 'bathrooms', 'sizeOther', 'location']);
 
 const INITIAL_FILTERS = {
   propertyType: '',
@@ -72,20 +75,27 @@ const INITIAL_FILTERS = {
   minBedrooms: '', maxBedrooms: '',
   minBathrooms: '', maxBathrooms: '',
   minSize: '', maxSize: '',
-  state: '', city: '',
+  // LOCATION FILTERS - Keep these separate for the Clear All logic
+  state: '', city: '', neighborhood: '',
   amenities: [],
   yearBuiltFrom: '', yearBuiltTo: '',
 };
 
+const LOCATION_KEYS = ['state', 'city', 'neighborhood'];
+const NON_LOCATION_KEYS = Object.keys(INITIAL_FILTERS).filter(key => !LOCATION_KEYS.includes(key));
+
+
 // ===============================================
-// HELPER FUNCTIONS & COMPONENTS (Mocked/Simplified)
+// HELPER FUNCTIONS & COMPONENTS
 // ===============================================
 
 const parseQueryString = (params) => {
   const newFilters = { ...INITIAL_FILTERS };
   params.forEach((value, key) => {
     if (key in INITIAL_FILTERS) {
-      newFilters[key] = key === 'amenities' ? (value ? value.split(',') : []) : value;
+      // Use case-insensitive check for boolean/numeric values from URL
+      const normalizedValue = key === 'amenities' ? (value ? value.split(',') : []) : value;
+      newFilters[key] = normalizedValue;
     } else if (key === 'amenities') {
       newFilters[key] = value ? value.split(',') : [];
     }
@@ -93,62 +103,7 @@ const parseQueryString = (params) => {
   return newFilters;
 };
 
-// --- PropertyTypeModal (Unchanged - uses applyImmediate) ---
-const PropertyTypeModal = ({ filters, applyImmediate, setActivePropertyCategory, activePropertyCategory }) => (
-  <div className="space-y-4">
-    <div className="flex flex-wrap gap-2 mb-4">
-      {Object.keys(PROPERTY_TYPES).map((category) => (
-        <button
-          key={category}
-          onClick={() => setActivePropertyCategory(category)}
-          className={`px-4 py-2 rounded-full font-medium transition-all ${activePropertyCategory === category ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-        >
-          {category}
-        </button>
-      ))}
-    </div>
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      {PROPERTY_TYPES[activePropertyCategory].map((type) => {
-        const Icon = type.icon;
-        const isSelected = filters.propertyType === type.id;
-        return (
-          <button
-            key={type.id}
-            onClick={() => applyImmediate({ propertyType: isSelected ? '' : type.id })}
-            className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all w-full ${isSelected ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
-              }`}
-          >
-            <Icon className={`h-6 w-6 ${isSelected ? 'text-gray-900' : 'text-gray-500'}`} />
-            <span className={`text-sm font-medium ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>
-              {type.label}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  </div>
-);
-
-// --- PropertyForModal (Unchanged - uses applyImmediate) ---
-const PropertyForModal = ({ filters, applyImmediate }) => (
-  <div className="space-y-2">
-    {PROPERTY_FOR_OPTIONS.map((option) => (
-      <button
-        key={option.value}
-        onClick={() => applyImmediate({ propertyFor: option.value })}
-        className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${filters.propertyFor === option.value ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
-          }`}
-      >
-        <span className="font-medium">{option.label}</span>
-        {filters.propertyFor === option.value && <Check className="h-5 w-5 text-gray-900" />}
-      </button>
-    ))}
-  </div>
-);
-
-// --- RangeSelector (UPDATED to accept tempFilters and a dedicated tempHandleFilterChange) ---
-// Now uses 'tempFilters' and 'handleTempFilterChange'
+// --- RangeSelector (Unchanged) ---
 const RangeSelector = ({ label, options, minKey, maxKey, tempFilters, handleTempFilterChange }) => (
   <div className="space-y-4">
     <div>
@@ -188,7 +143,7 @@ const RangeSelector = ({ label, options, minKey, maxKey, tempFilters, handleTemp
   </div>
 );
 
-// --- PriceModal (Now consistently uses tempFilters and handleTempFilterChange) ---
+// --- PriceModal (Unchanged) ---
 const PriceModal = ({ tempFilters, handleTempFilterChange }) => (
   <div className="space-y-4">
     <div className="grid grid-cols-2 gap-4">
@@ -198,7 +153,6 @@ const PriceModal = ({ tempFilters, handleTempFilterChange }) => (
           type="number"
           placeholder="Min Price ($)"
           value={tempFilters.minPrice}
-          // Change handler uses the temporary state function
           onChange={(e) => handleTempFilterChange('minPrice', e.target.value)}
           className="normal_input"
         />
@@ -209,13 +163,11 @@ const PriceModal = ({ tempFilters, handleTempFilterChange }) => (
           type="number"
           placeholder="Max Price ($)"
           value={tempFilters.maxPrice}
-          // Change handler uses the temporary state function
           onChange={(e) => handleTempFilterChange('maxPrice', e.target.value)}
           className="normal_input"
         />
       </div>
     </div>
-    {/* Quick select buttons (also updated to use tempHandleFilterChange) */}
     <div className="grid grid-cols-4 gap-2 pt-2">
       {[100000, 250000, 500000, 1000000].map((price) => (
         <button
@@ -232,7 +184,57 @@ const PriceModal = ({ tempFilters, handleTempFilterChange }) => (
   </div>
 );
 
-// --- AmenitiesModal (Unchanged - uses main filters and debounced update) ---
+// --- PropertyTypeModal & PropertyForModal & AmenitiesModal (Unchanged - instant apply) ---
+const PropertyTypeModal = ({ filters, applyImmediate, setActivePropertyCategory, activePropertyCategory }) => (
+  <div className="space-y-4">
+    <div className="flex flex-wrap gap-2 mb-4">
+      {Object.keys(PROPERTY_TYPES).map((category) => (
+        <button
+          key={category}
+          onClick={() => setActivePropertyCategory(category)}
+          className={`px-4 py-2 rounded-full font-medium transition-all ${activePropertyCategory === category ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+        >
+          {category}
+        </button>
+      ))}
+    </div>
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {PROPERTY_TYPES[activePropertyCategory].map((type) => {
+        const Icon = type.icon;
+        const isSelected = filters.propertyType === type.id;
+        return (
+          <button
+            key={type.id}
+            onClick={() => applyImmediate({ propertyType: isSelected ? '' : type.id })}
+            className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all w-full ${isSelected ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
+          >
+            <Icon className={`h-6 w-6 ${isSelected ? 'text-gray-900' : 'text-gray-500'}`} />
+            <span className={`text-sm font-medium ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>
+              {type.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
+const PropertyForModal = ({ filters, applyImmediate }) => (
+  <div className="space-y-2">
+    {PROPERTY_FOR_OPTIONS.map((option) => (
+      <button
+        key={option.value}
+        onClick={() => applyImmediate({ propertyFor: option.value })}
+        className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${filters.propertyFor === option.value ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+          }`}
+      >
+        <span className="font-medium">{option.label}</span>
+        {filters.propertyFor === option.value && <Check className="h-5 w-5 text-gray-900" />}
+      </button>
+    ))}
+  </div>
+);
 const AmenitiesModal = ({ filters, handleAmenityToggle }) => (
   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
     {AMENITIES_OPTIONS.map((amenity) => {
@@ -259,12 +261,15 @@ const AmenitiesModal = ({ filters, handleAmenityToggle }) => (
   </div>
 );
 
-// --- MoreFiltersModal (UPDATED to accept tempFilters and a dedicated tempHandleFilterChange) ---
+// --- SizeOtherModal (Renamed & Location removed) ---
 // Now uses 'tempFilters' and 'handleTempFilterChange'
-const MoreFiltersModal = ({ tempFilters, handleTempFilterChange }) => (
+const SizeOtherModal = ({ tempFilters, handleTempFilterChange }) => (
   <div className="space-y-6">
     <div>
-      <label className="block text-sm font-semibold text-gray-900 mb-3">Square Footage</label>
+      <label className="block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <Ruler className="w-4 h-4 text-gray-600" />
+        Square Footage
+      </label>
       <div className="grid grid-cols-2 gap-4">
         <input
           type="number"
@@ -283,26 +288,10 @@ const MoreFiltersModal = ({ tempFilters, handleTempFilterChange }) => (
       </div>
     </div>
     <div>
-      <label className="block text-sm font-semibold text-gray-900 mb-3">Location</label>
-      <div className="grid grid-cols-2 gap-4">
-        <input
-          type="text"
-          placeholder="City"
-          value={tempFilters.city}
-          onChange={(e) => handleTempFilterChange('city', e.target.value)}
-          className="normal_input"
-        />
-        <input
-          type="text"
-          placeholder="State/Province"
-          value={tempFilters.state}
-          onChange={(e) => handleTempFilterChange('state', e.target.value)}
-          className="normal_input"
-        />
-      </div>
-    </div>
-    <div>
-      <label className="block text-sm font-semibold text-gray-900 mb-3">Year Built</label>
+      <label className="block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <Building className="w-4 h-4 text-gray-600" />
+        Year Built
+      </label>
       <div className="grid grid-cols-2 gap-4">
         <input
           type="number"
@@ -327,6 +316,124 @@ const MoreFiltersModal = ({ tempFilters, handleTempFilterChange }) => (
   </div>
 );
 
+
+// --- NEW: LocationModal (Replicating HeroBanner Logic) ---
+const LocationModal = ({ tempFilters, handleTempFilterChange }) => {
+
+  // --- Location Dropdown Options Logic (Copied/Adapted from HeroBanner) ---
+  const stateOptions = useMemo(() => Us_Data.map((s) => s.state), []);
+
+  const cityOptions = useMemo(() => {
+    if (tempFilters.state) {
+      const state = Us_Data.find((s) => s.state === tempFilters.state);
+      return state ? state.cities.map((c) => c.name) : [];
+    }
+    if (tempFilters.neighborhood) {
+      const match = Us_Data.flatMap((s) =>
+        s.cities.filter((c) => c.neighborhoods.includes(tempFilters.neighborhood))
+      );
+      return match.map((c) => c.name);
+    }
+    return Us_Data.flatMap((s) => s.cities.map((c) => c.name));
+  }, [tempFilters.state, tempFilters.neighborhood]);
+
+  const neighborhoodOptions = useMemo(() => {
+    if (tempFilters.city) {
+      const city = Us_Data.flatMap((s) => s.cities).find(
+        (c) => c.name === tempFilters.city
+      );
+      return city ? city.neighborhoods : [];
+    }
+    if (tempFilters.state) {
+      const state = Us_Data.find((s) => s.state === tempFilters.state);
+      return state
+        ? state.cities.flatMap((c) => c.neighborhoods)
+        : [];
+    }
+    return Us_Data.flatMap((s) =>
+      s.cities.flatMap((c) => c.neighborhoods)
+    );
+  }, [tempFilters.state, tempFilters.city]);
+
+  const handleStateChange = (value) => {
+    handleTempFilterChange('state', value);
+    handleTempFilterChange('city', '');
+    handleTempFilterChange('neighborhood', '');
+  };
+
+  const handleCityChange = (value) => {
+    handleTempFilterChange('city', value);
+    const matchedState = Us_Data.find((s) =>
+      s.cities.some((c) => c.name === value)
+    );
+    if (matchedState) handleTempFilterChange('state', matchedState.state);
+    handleTempFilterChange('neighborhood', '');
+  };
+
+  const handleNeighborhoodChange = (value) => {
+    handleTempFilterChange('neighborhood', value);
+    const matchedState = Us_Data.find((s) =>
+      s.cities.some((c) => c.neighborhoods.includes(value))
+    );
+    const matchedCity = matchedState?.cities.find((c) =>
+      c.neighborhoods.includes(value)
+    );
+    if (matchedState) handleTempFilterChange('state', matchedState.state);
+    if (matchedCity) handleTempFilterChange('city', matchedCity.name);
+  };
+  // --- End Location Dropdown Options Logic ---
+
+
+  return (
+    <div className="space-y-6">
+      {/* State Dropdown */}
+      <div>
+        <label className="text-sm font-semibold uppercase text-gray-600 tracking-wide flex items-center gap-2 mb-2">
+          <MapPin className="w-4 h-4 text-blue-500" />
+          State
+        </label>
+        <MuiDropdown
+          placeholder="Select State"
+          options={stateOptions}
+          value={tempFilters.state}
+          onChange={handleStateChange}
+          customClasses="h-[48px] border-gray-300 rounded-lg focus:border-blue-500 transition-all text-sm"
+        />
+      </div>
+
+      {/* City Dropdown */}
+      <div>
+        <label className="text-sm font-semibold uppercase text-gray-600 tracking-wide flex items-center gap-2 mb-2">
+          <Building className="w-4 h-4 text-blue-500" />
+          City
+        </label>
+        <MuiDropdown
+          placeholder="Select City"
+          options={cityOptions}
+          value={tempFilters.city}
+          onChange={handleCityChange}
+          customClasses="h-[48px] border-gray-300 rounded-lg focus:border-blue-500 transition-all text-sm"
+        />
+      </div>
+
+      {/* Neighborhood Dropdown */}
+      <div>
+        <label className="text-sm font-semibold uppercase text-gray-600 tracking-wide flex items-center gap-2 mb-2">
+          <Navigation className="w-4 h-4 text-blue-500" />
+          Neighborhood
+        </label>
+        <MuiDropdown
+          placeholder="Select Area"
+          options={neighborhoodOptions}
+          value={tempFilters.neighborhood}
+          onChange={handleNeighborhoodChange}
+          customClasses="h-[48px] border-gray-300 rounded-lg focus:border-blue-500 transition-all text-sm"
+        />
+      </div>
+    </div>
+  );
+};
+
 // ===============================================
 // MAIN FILTER COMPONENT
 // ===============================================
@@ -336,10 +443,9 @@ const FilterSection = ({ onApplyFilters }) => {
   const searchParams = useSearchParams();
   const scrollContainerRef = useRef(null);
   const modalContentRef = useRef(null);
-  const previousFiltersRef = useRef(null);
 
   const [filters, setFilters] = useState(INITIAL_FILTERS);
-  const [tempFilters, setTempFilters] = useState(INITIAL_FILTERS); // 👈 Dedicated state for draft changes
+  const [tempFilters, setTempFilters] = useState(INITIAL_FILTERS);
   const [activeModal, setActiveModal] = useState(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -395,7 +501,7 @@ const FilterSection = ({ onApplyFilters }) => {
   const buildQueryString = (f) => {
     const params = new URLSearchParams();
     Object.entries(f).forEach(([key, value]) => {
-      if (value && (Array.isArray(value) ? value.length > 0 : true)) {
+      if (value && (Array.isArray(value) ? value.length > 0 : value.toString().trim() !== '')) {
         params.set(key, Array.isArray(value) ? value.join(',') : value);
       }
     });
@@ -422,26 +528,19 @@ const FilterSection = ({ onApplyFilters }) => {
   }, [filters, updateUrlAndNotify]);
 
   const handleCancel = useCallback(() => {
-    if (activeModal && MODALS_THAT_REQUIRE_APPLY.has(activeModal)) {
-      // Revert state for multi-input modals (Price, Beds, More) is now implicit:
-      // We only update the main 'filters' state on 'Show Results'.
-      // When 'Cancel' is clicked, we just close the modal, discarding 'tempFilters'.
-    }
+    // If a modal that uses tempFilters is closed, tempFilters is discarded.
+    // The main 'filters' state remains unchanged.
     setActiveModal(null);
-  }, [activeModal]);
+  }, []);
 
-  // We are removing the original handleFilterChange from the component scope
-  // for the multi-input modals, as they now use 'tempFilters'.
-
-  // New dedicated change handler for temp state
+  // Dedicated change handler for temp state
   const handleTempFilterChange = useCallback((key, value) => {
     setTempFilters((prev) => ({ ...prev, [key]: value }));
   }, []);
 
   const openModal = (key) => {
     if (MODALS_THAT_REQUIRE_APPLY.has(key)) {
-      // Only set temp state when opening a multi-input modal
-      // The current main filters state becomes the starting point for editing.
+      // Set temp state when opening a multi-input modal
       setTempFilters({ ...filters });
     }
     setActiveModal(key);
@@ -458,6 +557,13 @@ const FilterSection = ({ onApplyFilters }) => {
       setActiveModal(null);
     }
   }, [activeModal, filters, updateUrlAndNotify]);
+
+  // Handle the 'Show Results' click for modals that use tempFilters
+  const handleApplyModalFilters = useCallback(() => {
+    // The main filters state is updated with the temporary, draft state
+    applyFilters(tempFilters);
+  }, [applyFilters, tempFilters]);
+
 
   // Debounce amenity toggling to avoid too many URL changes
   const amenityTimerRef = useRef(null);
@@ -476,16 +582,33 @@ const FilterSection = ({ onApplyFilters }) => {
     }, 250); // 250ms debounce
   };
 
+  /**
+   * Clears all filters *except* the location filters.
+   */
   const clearAllFilters = () => {
-    setFilters(INITIAL_FILTERS);
-    applyFilters(INITIAL_FILTERS);
+    // Isolate the location filters from the current state
+    const locationFilters = LOCATION_KEYS.reduce((acc, key) => ({
+      ...acc,
+      [key]: filters[key] || '', // Use current location or empty string
+    }), {});
+
+    // Create the new state by combining initial non-location filters with current location filters
+    const clearedFilters = {
+      ...INITIAL_FILTERS,
+      ...locationFilters,
+      // Ensure other non-location keys are cleared (redundant with INITIAL_FILTERS but safe)
+      ...NON_LOCATION_KEYS.reduce((acc, key) => ({ ...acc, [key]: INITIAL_FILTERS[key] }), {})
+    };
+
+    setFilters(clearedFilters);
+    applyFilters(clearedFilters);
   };
 
   const hasActiveFilters = useMemo(() => Object.entries(filters).some(([key, value]) =>
     value && (Array.isArray(value) ? value.length > 0 : value.toString().trim() !== '')
   ), [filters]);
 
-  // 4. UI Rendering Helpers (Unchanged)
+  // 4. UI Rendering Helpers
   const getFilterLabel = useCallback((filterKey) => {
     switch (filterKey) {
       case 'propertyType':
@@ -516,11 +639,16 @@ const FilterSection = ({ onApplyFilters }) => {
         return 'Baths';
       case 'amenities':
         return filters.amenities.length > 0 ? `${filters.amenities.length} Amenities` : 'Amenities';
-      case 'more':
-        const moreCount = [filters.minSize, filters.maxSize, filters.yearBuiltFrom, filters.yearBuiltTo, filters.city, filters.state].filter(Boolean).length;
-        return moreCount > 0 ? `${moreCount} More` : 'More';
+      case 'location':
+        if (filters.neighborhood) return filters.neighborhood;
+        if (filters.city) return filters.city;
+        if (filters.state) return filters.state;
+        return 'Location';
+      case 'sizeOther':
+        const moreCount = [filters.minSize, filters.maxSize, filters.yearBuiltFrom, filters.yearBuiltTo].filter(Boolean).length;
+        return moreCount > 0 ? `${moreCount} More Filters` : 'Size & Other';
       default:
-        return 'More';
+        return 'Filter';
     }
   }, [filters]);
 
@@ -532,7 +660,8 @@ const FilterSection = ({ onApplyFilters }) => {
       case 'bedrooms': return !!(filters.minBedrooms || filters.maxBedrooms);
       case 'bathrooms': return !!(filters.minBathrooms || filters.maxBathrooms);
       case 'amenities': return filters.amenities.length > 0;
-      case 'more': return !!(filters.minSize || filters.maxSize || filters.yearBuiltFrom || filters.yearBuiltTo || filters.city || filters.state);
+      case 'location': return !!(filters.state || filters.city || filters.neighborhood); // New location check
+      case 'sizeOther': return !!(filters.minSize || filters.maxSize || filters.yearBuiltFrom || filters.yearBuiltTo); // Location removed
       default: return false;
     }
   }, [filters]);
@@ -576,27 +705,34 @@ const FilterSection = ({ onApplyFilters }) => {
             </button>
           )}
 
-          {/* Filter Button Scroll Container (Unchanged) */}
+          {/* Filter Button Scroll Container */}
           <div
             ref={scrollContainerRef}
             className="flex items-center gap-3 overflow-x-auto scrollbar-hide scroll-smooth px-0 sm:px-8"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            <FilterButton filterKey="propertyType" defaultLabel="Property Type" icon={Home} />
-            <FilterButton filterKey="propertyFor" defaultLabel="For Sale/Rent" />
-            <FilterButton filterKey="price" defaultLabel="Price Range" icon={DollarSign} />
-            <FilterButton filterKey="bedrooms" defaultLabel="Beds" icon={Bed} />
-            <FilterButton filterKey="bathrooms" defaultLabel="Baths" icon={Bath} />
-            <FilterButton filterKey="amenities" defaultLabel="Amenities" icon={Check} />
-            <FilterButton filterKey="more" defaultLabel="More Filters" icon={SlidersHorizontal} />
+            {/* Filter Buttons */}
+            <FilterButton filterKey="propertyType" icon={Home} defaultLabel="Property Type" />
+            <FilterButton filterKey="propertyFor" icon={DollarSign} defaultLabel="For Sale/Rent" />
+            <FilterButton filterKey="location" icon={Map} defaultLabel="Location" /> {/* NEW LOCATION BUTTON */}
+            <FilterButton filterKey="price" icon={DollarSign} defaultLabel="Price Range" />
+            <FilterButton filterKey="bedrooms" icon={Bed} defaultLabel="Bedrooms" />
+            <FilterButton filterKey="bathrooms" icon={Bath} defaultLabel="Bathrooms" />
+            <FilterButton filterKey="amenities" icon={Star} defaultLabel="Amenities" />
 
+            <div className='w-4'></div> {/* Spacing */}
+
+            {/* Renamed More Filters Button */}
+            <FilterButton filterKey="sizeOther" icon={SlidersHorizontal} defaultLabel="Size & Other" />
+
+            {/* Clear All Button */}
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-red-400 bg-red-50 text-red-700 hover:bg-red-100 transition-all whitespace-nowrap text-sm font-medium flex-shrink-0"
+                className="flex items-center gap-1 px-3 py-2.5 rounded-full border border-red-500 text-red-600 bg-red-50/50 text-sm font-medium transition-all hover:bg-red-100/50 whitespace-nowrap"
               >
                 <X className="h-4 w-4" />
-                Clear All
+                Clear Filters
               </button>
             )}
           </div>
@@ -613,126 +749,109 @@ const FilterSection = ({ onApplyFilters }) => {
         </div>
       </div>
 
-      {/* Modal Container */}
+      {/* --- Modal Overlay --- */}
       {activeModal && (
-        <>
-          {/* Overlay - High Z-index (Unchanged) */}
+        <div
+          id={`filter-modal-${activeModal}`}
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-opacity duration-300 flex items-start justify-center pt-8 md:pt-16 px-4"
+          onClick={handleCancel}
+        >
           <div
-            className="fixed inset-0 bg-black bg-opacity-25 z-40"
-            onClick={handleCancel}
-            aria-hidden="true"
-          />
-
-          {/* Modal Panel - Z-index must be higher than overlay (Unchanged) */}
-          <div className="absolute left-0 right-0 top-[0%] mt-2 z-50 max-w-7xl mx-auto px-4">
-            <div className="max-w-2xl mx-auto">
-              <div
-                ref={modalContentRef}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-h-[70vh] flex flex-col focus:outline-none"
-                tabIndex={-1}
-                id={`filter-modal-${activeModal}`}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="modal-title"
-              >
-                {/* Modal Header (Unchanged) */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
-                  <h3 id="modal-title" className="text-lg font-semibold text-gray-900">
-                    {activeModal === 'propertyType' && 'Select Property Type'}
-                    {activeModal === 'propertyFor' && 'Listing Status'}
-                    {activeModal === 'price' && 'Price Range'}
-                    {activeModal === 'bedrooms' && 'Bedrooms'}
-                    {activeModal === 'bathrooms' && 'Bathrooms'}
-                    {activeModal === 'amenities' && 'Amenities & Features'}
-                    {activeModal === 'more' && 'Additional Filters'}
-                  </h3>
-                  <button
-                    onClick={handleCancel}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    aria-label="Close filters modal"
-                  >
-                    <X className="w-5 h-5 text-gray-500" />
-                  </button>
-                </div>
-
-                {/* Scrollable content area */}
-                <div className="overflow-y-auto flex-1 p-6">
-                  {activeModal === 'propertyType' && (
-                    <PropertyTypeModal
-                      filters={filters}
-                      applyImmediate={applyImmediate}
-                      activePropertyCategory={activePropertyCategory}
-                      setActivePropertyCategory={setActivePropertyCategory}
-                    />
-                  )}
-                  {activeModal === 'propertyFor' && (
-                    <PropertyForModal filters={filters} applyImmediate={applyImmediate} />
-                  )}
-                  {/* PRICE MODAL: Now passes tempFilters and handleTempFilterChange */}
-                  {activeModal === 'price' && (
-                    <PriceModal
-                      tempFilters={tempFilters}
-                      handleTempFilterChange={handleTempFilterChange}
-                    />
-                  )}
-                  {/* BEDROOMS MODAL: Now passes tempFilters and handleTempFilterChange */}
-                  {activeModal === 'bedrooms' && (
-                    <RangeSelector
-                      label="Bedrooms"
-                      options={NUM_OPTIONS}
-                      minKey="minBedrooms"
-                      maxKey="maxBedrooms"
-                      tempFilters={tempFilters} // 👈 Use tempFilters
-                      handleTempFilterChange={handleTempFilterChange} // 👈 Use temp change handler
-                    />
-                  )}
-                  {/* BATHROOMS MODAL: Now passes tempFilters and handleTempFilterChange */}
-                  {activeModal === 'bathrooms' && (
-                    <RangeSelector
-                      label="Bathrooms"
-                      options={NUM_OPTIONS}
-                      minKey="minBathrooms"
-                      maxKey="maxBathrooms"
-                      tempFilters={tempFilters} // 👈 Use tempFilters
-                      handleTempFilterChange={handleTempFilterChange} // 👈 Use temp change handler
-                    />
-                  )}
-                  {activeModal === 'amenities' && (
-                    <AmenitiesModal filters={filters} handleAmenityToggle={handleAmenityToggle} />
-                  )}
-                  {/* MORE FILTERS MODAL: Now passes tempFilters and handleTempFilterChange */}
-                  {activeModal === 'more' && (
-                    <MoreFiltersModal
-                      tempFilters={tempFilters} // 👈 Use tempFilters
-                      handleTempFilterChange={handleTempFilterChange} // 👈 Use temp change handler
-                    />
-                  )}
-                </div>
-
-                {/* Modal Footer (Only for Multi-Input Modals) */}
-                {MODALS_THAT_REQUIRE_APPLY.has(activeModal) && (
-                  <div className="flex justify-between items-center p-4 border-t border-gray-200 flex-shrink-0">
-                    <button
-                      onClick={handleCancel}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    {/* The applyFilters function commits tempFilters to filters state */}
-                    <button
-                      onClick={() => applyFilters(tempFilters)}
-                      className="px-6 py-[8px] text-base font-semibold text-white bg-blue-600 rounded-[50px] hover:bg-blue-700 transition-colors shadow-md"
-                    >
-                      Show Results
-                    </button>
-
-                  </div>
-                )}
-              </div>
+            ref={modalContentRef}
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()} // Keep modal open on click inside
+            className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto transform transition-transform duration-300"
+          >
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white p-5 border-b border-gray-200 flex items-center justify-between z-10">
+              <button onClick={handleCancel} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+              <h3 className="text-xl font-bold text-gray-900">
+                {activeModal === 'propertyType' ? 'Property Type' :
+                  activeModal === 'propertyFor' ? 'For Sale/Rent' :
+                    activeModal === 'price' ? 'Price Range' :
+                      activeModal === 'bedrooms' ? 'Bedrooms' :
+                        activeModal === 'bathrooms' ? 'Bathrooms' :
+                          activeModal === 'amenities' ? 'Amenities' :
+                            activeModal === 'location' ? 'Select Location' : // New title
+                              activeModal === 'sizeOther' ? 'Size & Other' : 'Filter Options'} {/* Updated title */}
+              </h3>
+              <div className='w-10 h-5'></div> {/* Spacer */}
             </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              {activeModal === 'propertyType' && (
+                <PropertyTypeModal
+                  filters={filters}
+                  applyImmediate={applyImmediate}
+                  setActivePropertyCategory={setActivePropertyCategory}
+                  activePropertyCategory={activePropertyCategory}
+                />
+              )}
+              {activeModal === 'propertyFor' && (
+                <PropertyForModal filters={filters} applyImmediate={applyImmediate} />
+              )}
+              {activeModal === 'location' && (
+                <LocationModal
+                  tempFilters={tempFilters}
+                  handleTempFilterChange={handleTempFilterChange}
+                />
+              )}
+              {activeModal === 'price' && (
+                <PriceModal
+                  tempFilters={tempFilters}
+                  handleTempFilterChange={handleTempFilterChange}
+                />
+              )}
+              {activeModal === 'bedrooms' && (
+                <RangeSelector
+                  label="Bedrooms"
+                  options={NUM_OPTIONS}
+                  minKey="minBedrooms"
+                  maxKey="maxBedrooms"
+                  tempFilters={tempFilters}
+                  handleTempFilterChange={handleTempFilterChange}
+                />
+              )}
+              {activeModal === 'bathrooms' && (
+                <RangeSelector
+                  label="Bathrooms"
+                  options={NUM_OPTIONS}
+                  minKey="minBathrooms"
+                  maxKey="maxBathrooms"
+                  tempFilters={tempFilters}
+                  handleTempFilterChange={handleTempFilterChange}
+                />
+              )}
+              {activeModal === 'amenities' && (
+                <AmenitiesModal
+                  filters={filters}
+                  handleAmenityToggle={handleAmenityToggle}
+                />
+              )}
+              {activeModal === 'sizeOther' && (
+                <SizeOtherModal
+                  tempFilters={tempFilters}
+                  handleTempFilterChange={handleTempFilterChange}
+                />
+              )}
+            </div>
+
+            {/* Modal Footer (Show Results Button for multi-input modals) */}
+            {MODALS_THAT_REQUIRE_APPLY.has(activeModal) && (
+              <div className="sticky bottom-0 bg-white p-4 border-t border-gray-200 shadow-xl flex justify-end">
+                <button
+                  onClick={handleApplyModalFilters}
+                  className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
+                >
+                  Show Results
+                </button>
+              </div>
+            )}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

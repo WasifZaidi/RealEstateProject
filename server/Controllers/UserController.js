@@ -3,6 +3,9 @@ const { sendEmail } = require('../utils/sendEmail');
 const sendToken = require("../utils/sendToken")
 const { ObjectId } = require("mongodb")
 const { nanoid } = require('nanoid');
+const cloudinary = require("../utils/cloudinary");
+const { v4: uuidv4 } = require("uuid")
+const FileCleanupManager = require("../utils/fileCleanup");
 
 exports.signUp = async (req, res) => {
     try {
@@ -26,7 +29,7 @@ exports.signUp = async (req, res) => {
             userName,
             Email,
             Password,
-            otpCode: otp,
+            otp: otp,
             otpExpire: Date.now() + 10 * 60 * 1000, // 10 min expiry
             isVerified: false,
             loginProvider: "local",
@@ -75,16 +78,16 @@ exports.verifyEmail = async (req, res) => {
             return res.status(400).json({ success: false, message: "User is already verified." });
         }
 
-        if (user.otpCode !== Number(otp) || user.otpExpire < Date.now()) {
+        if (user.otp !== Number(otp) || user.otpExpire < Date.now()) {
             return res.status(400).json({ success: false, message: "Invalid or expired OTP." });
         }
         user.isVerified = true;
-        user.otpCode = undefined;
+        user.otp = undefined;
         user.otpExpire = undefined;
 
         await user.save({ validateBeforeSave: false });
 
-      sendToken(user, res, "SignIn successful", "user_token_realEstate");
+        sendToken(user, res, "SignIn successful", "user_token_realEstate");
 
     } catch (err) {
         console.error(err);
@@ -172,7 +175,7 @@ exports.googleLogin = async (req, res) => {
             isVerified: true,
         });
 
-       sendToken(user, res, "SignIn successful", "user_token_realEstate");
+        sendToken(user, res, "SignIn successful", "user_token_realEstate");
     } catch (err) {
         console.error("Google Login Error:", err);
         res.status(500).json({ success: false, message: "An error occurred during Google login. Please try again later." });
@@ -262,70 +265,86 @@ exports.resetPassword = async (req, res) => {
         res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 }
+// controllers/emailController.js
 exports.sendOtpForEmailChange = async (req, res) => {
-    try {
-        const { newEmail } = req.body;
-        const currentEmail = req.user.Email;
-        if (!currentEmail || !newEmail) {
-            return res.status(400).json({ success: false, message: "Both current and new email are required" });
-        }
-        const existing = await User.findOne({ Email: newEmail });
-        if (existing) {
-            return res.status(400).json({ success: false, message: "New email is already in use" });
-        }
-        const verifiedAt = req.user.emailChangeVerifiedAt;
-        const isVerifiedRecently = verifiedAt && (Date.now() - verifiedAt.getTime()) < 10 * 60 * 1000; // 10 min
+  try {
+    const { newEmail } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-        if (!req.user.emailChangeVerified || !isVerifiedRecently) {
-            return res.status(403).json({
-                success: false,
-                message: "Password re-verification required to change email.",
-            });
-        }
-        const otp = Math.floor(100000 + Math.random() * 900000);
+    const currentEmail = user.Email;
+    if (!currentEmail || !newEmail)
+      return res.status(400).json({ success: false, message: "Both current and new email are required" });
 
-        req.user.otpCode = otp;
-        req.user.otpExpire = Date.now() + 10 * 60 * 1000;
-        req.user.tempEmail = newEmail;
-        await req.user.save({ validateBeforeSave: false });
+    const existing = await User.findOne({ Email: newEmail });
+    if (existing)
+      return res.status(400).json({ success: false, message: "New email is already in use" });
 
-        const message = `Your OTP code for updating your email is: ${otp}\n\nIt expires in 10 minutes.`;
-        await sendEmail({
-            to: newEmail,
-            subject: "Verify New Email Address",
-            text: message,
-        });
-
-        return res.status(200).json({ success: true, message: "OTP sent to new email" });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+    // Check last OTP request (cooldown)
+    if (user.lastOtpSentAt && Date.now() - user.lastOtpSentAt.getTime() < 60 * 1000) {
+      const secondsLeft = Math.ceil(60 - (Date.now() - user.lastOtpSentAt.getTime()) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${secondsLeft}s before requesting another OTP.`,
+        retryAfter: secondsLeft,
+      });
     }
+
+    // Ensure password re-verification still valid
+    const verifiedAt = user.emailChangeVerifiedAt;
+    const isVerifiedRecently = verifiedAt && (Date.now() - verifiedAt.getTime()) < 10 * 60 * 1000;
+    if (!user.emailChangeVerified || !isVerifiedRecently) {
+      return res.status(403).json({
+        success: false,
+        message: "Password re-verification required to change email.",
+      });
+    }
+
+    // Generate and send OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    user.otp = otp;
+    user.otpExpire = Date.now() + 10 * 60 * 1000;
+    user.tempEmail = newEmail;
+    user.lastOtpSentAt = new Date(); // record time
+    await user.save({ validateBeforeSave: false });
+
+    const message = `Your OTP for verifying new email is: ${otp}\n\nIt expires in 10 minutes.`;
+    await sendEmail({
+      to: newEmail,
+      subject: "Verify New Email Address",
+      text: message,
+    });
+
+    return res.status(200).json({ success: true, message: "OTP sent successfully" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
 };
 
-
-exports.verifyOtp = async (req, res) => {
+exports.verifyOtpEmailChange = async (req, res) => {
     try {
-        const { otpCode } = req.body;
-        const Email = req.user.Email;
-        if (!Email || !otpCode) {
+        const { otp } = req.body;
+        const mainUser = await User.findById(req.user.id);
+        const Email = mainUser.Email;
+        console.log(Email, otp)
+        if (!Email || !otp) {
             return res.status(400).json({ success: false, message: "Email and OTP are required" });
         }
         const user = await User.findOne({ Email });
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found with this email" });
         }
-        if (!user.otpCode || !user.otpExpire || user.otpExpire < Date.now()) {
+        if (!user.otp || !user.otpExpire || user.otpExpire < Date.now()) {
             return res.status(400).json({ success: false, message: "OTP has expired. Please request a new one." });
         }
-        if (user.otpCode !== Number(otpCode)) {
+        if (user.otp !== Number(otp)) {
             return res.status(400).json({ success: false, message: "Invalid OTP" });
         }
         if (user.tempEmail) {
             user.Email = user.tempEmail;
         }
-        user.otpCode = undefined;
+        user.otp = undefined;
         user.otpExpire = undefined;
         user.tempEmail = undefined;
         user.emailChangeVerified = false;
@@ -343,13 +362,14 @@ exports.verifyOtp = async (req, res) => {
 
 exports.matchUser = async (req, res) => {
     const { Password } = req.body
-    const Email = req.user.Email
-    if (!Email) {
-        return res.status(401).json({ success: false, message: "Data is Missing" })
-    }
-    const user = await User.findOne({ Email })
+    const user = await User.findById(req.user.id)
     if (!user) {
         return res.status(401).json({ success: false, message: "Invalid Email or Password" })
+    }
+
+    const Email = user.Email;
+    if (!Email) {
+        return res.status(401).json({ success: false, message: "Data is Missing" })
     }
     const isMatch = await user.comparePassword(Password)
     if (!isMatch) {
@@ -360,3 +380,156 @@ exports.matchUser = async (req, res) => {
     await user.save({ validateBeforeSave: false });
     res.status(200).json({ success: true, user })
 }
+
+exports.updateUser = async (req, res) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { userName, PhoneNumber } = req.body;
+    const updatedData = {};
+
+    // ✅ userName validation
+    if (userName !== undefined) {
+      if (typeof userName !== "string" || !userName.trim()) {
+        return res.status(400).json({ success: false, message: "Invalid user name" });
+      }
+      updatedData.userName = userName.trim();
+    }
+
+    // ✅ PhoneNumber validation
+    if (PhoneNumber !== undefined) {
+      const phoneRegex = /^[0-9]{10,15}$/; // Allow 10–15 digits
+      if (!phoneRegex.test(PhoneNumber)) {
+        return res.status(400).json({ success: false, message: "Invalid phone number" });
+      }
+      updatedData.PhoneNumber = PhoneNumber;
+    }
+
+    if (Object.keys(updatedData).length === 0) {
+      return res.status(400).json({ success: false, message: "No valid fields to update" });
+    }
+
+    // ✅ Update user in DB
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updatedData },
+      { new: true, runValidators: true }
+    ).select("-Password");
+
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Update User Error:", error);
+    res.status(500).json({ success: false, message: error.message || "Internal Server Error" });
+  }
+};
+
+const uploadToCloudinary = async (filePath) => {
+  try {
+    return await cloudinary.uploader.upload(filePath, {
+      folder: "user_profiles",
+      public_id: `${uuidv4()}_${Date.now()}`,
+      resource_type: "image",
+      transformation: [{ width: 500, height: 500, crop: "limit" }],
+    });
+  } catch (err) {
+    throw new Error("MEDIA_UPLOAD_ERROR: Cloudinary upload failed");
+  }
+};
+
+exports.uploadProfileImage = async (req, res) => {
+  let newCloudinaryPublicId = null;
+  const tempFiles = req.file ? [req.file] : [];
+
+  try {
+    // 1️⃣ Check authorization and file
+    if (!req.user?.id) {
+      await FileCleanupManager.cleanupFiles(tempFiles);
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    if (!req.file?.path) {
+      await FileCleanupManager.cleanupFiles(tempFiles);
+      return res.status(400).json({ success: false, message: "No image file provided" });
+    }
+
+    // 2️⃣ Find user
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      await FileCleanupManager.cleanupFiles(tempFiles);
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // 3️⃣ Delete old Cloudinary image
+    if (user?.ProfilePicture?.public_id) {
+      try {
+        await cloudinary.uploader.destroy(user.ProfilePicture.public_id);
+        console.log(`🗑️ Deleted old Cloudinary image: ${user.ProfilePicture.public_id}`);
+      } catch (destroyErr) {
+        console.warn(`⚠️ Failed to delete old Cloudinary image: ${destroyErr.message}`);
+      }
+    }
+
+    // 4️⃣ Upload new image
+    const uploadedImage = await uploadToCloudinary(req.file.path);
+    newCloudinaryPublicId = uploadedImage.public_id;
+
+    // 5️⃣ Save new profile picture to DB
+    user.ProfilePicture = {
+      url: uploadedImage.secure_url,
+      public_id: uploadedImage.public_id,
+    };
+    await user.save();
+
+    // 6️⃣ Cleanup temp file after success
+    await FileCleanupManager.cleanupFiles(tempFiles);
+
+    // ✅ 7️⃣ Respond success
+    return res.status(200).json({
+      success: true,
+      message: "Profile image updated successfully",
+      profileImage: uploadedImage,
+    });
+
+  } catch (error) {
+    console.error("❌ Profile Image Upload Error:", {
+      message: error.message,
+      stack: error.stack,
+      user: req.user?.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    // 8️⃣ Rollback Cloudinary upload if something failed mid-way
+    if (newCloudinaryPublicId) {
+      try {
+        await cloudinary.uploader.destroy(newCloudinaryPublicId);
+        console.log(`🔄 Rolled back Cloudinary image: ${newCloudinaryPublicId}`);
+      } catch (rollbackErr) {
+        console.error("⚠️ Failed to rollback Cloudinary upload:", rollbackErr.message);
+      }
+    }
+
+    // 9️⃣ Always cleanup temp file
+    await FileCleanupManager.cleanupFiles(tempFiles);
+
+    // 🔟 Return standardized error response
+    let statusCode = 500;
+    let userMessage = "Server error while uploading profile image";
+
+    if (error.message.includes("MEDIA_UPLOAD_ERROR")) {
+      statusCode = 400;
+      userMessage = "Failed to upload image. Please try again.";
+    }
+
+    return res.status(statusCode).json({
+      success: false,
+      message: userMessage,
+      error: process.env.NODE_ENV === "production" ? undefined : error.message,
+    });
+  }
+};

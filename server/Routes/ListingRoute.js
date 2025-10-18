@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const ListingController = require("../Controllers/ListingController");
 const validateRequest = require("../middelware/validation/validateRequest");
-const upload = require("../middelware/upload");
+const { upload } = require("../middelware/upload");
 const { 
   createListingSchema, 
   filterListingSchema, 
@@ -30,17 +30,11 @@ router.post(
   upload.array("files", 10),
   (err, req, res, next) => {
     if (err instanceof multer.MulterError) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({
-          success: false,
-          message: "File too large. Maximum size is 10MB."
-        });
+      if (err.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({ success: false, message: "File too large. Maximum size is 10MB." });
       }
-      if (err.code === 'LIMIT_FILE_COUNT') {
-        return res.status(400).json({
-          success: false,
-          message: "Too many files. Maximum is 10 files."
-        });
+      if (err.code === "LIMIT_FILE_COUNT") {
+        return res.status(400).json({ success: false, message: "Too many files. Maximum is 10 files." });
       }
     }
     next(err);

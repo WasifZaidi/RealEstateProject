@@ -68,7 +68,10 @@ const userSchema = new mongoose.Schema({
 
   PhoneNumber: { type: String, required: false },
   Birthday: { type: birthdaySchema },
-  ProfileImage: { type: String },
+  ProfilePicture: {
+    url: { type: String, required: false },
+    public_id: { type: String, required: false }
+  },
   Gender: { type: String },
   Address: { type: [addressSchema], default: [] },
   role: { type: String, default: "user" },
@@ -80,7 +83,7 @@ const userSchema = new mongoose.Schema({
   emailChangeVerified: { type: Boolean, default: false },
   emailChangeVerifiedAt: { type: Date },
   isVerified: { type: Boolean, default: false },
-  isVerifiedAgent: {type: Boolean, default: false},
+  isVerifiedAgent: { type: Boolean, default: false },
 }, { timestamps: true });
 
 
