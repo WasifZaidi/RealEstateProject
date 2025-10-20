@@ -662,3 +662,58 @@ exports.getListingByFilter = async (req, res) => {
     });
   }
 };
+
+
+exports.getAgentListings = async (req, res) => {
+  try {
+    const agentRef = req.user?.id; 
+    if (!agentRef) {
+      return res.status(401).json({ success: false, message: 'Unauthorized - Agent ID missing' });
+    }
+
+    let { page = 1, limit = 10, sort = '-createdAt', status, search } = req.query;
+    page = Math.max(1, parseInt(page));
+    limit = Math.min(parseInt(limit), 100); // Hard cap to prevent overloading DB
+
+    const query = { agentRef };
+
+    if (status) query.status = status;
+    if (search) {
+      // Full-text search optimization
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+      ];
+    }
+    
+
+
+    const listings = await Listing.find(query)
+      .sort(sort)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select('title price.amount price.currency status propertyType listedAt views isFeatured') // Select only needed fields
+      .lean(); // Returns plain JS objects for better performance
+
+    const totalListings = await Listing.countDocuments(query);
+    const totalPages = Math.ceil(totalListings / limit);
+
+
+    // -------------------------------
+    // ✅ Response
+    // -------------------------------
+    res.status(200).json({
+      success: true,
+      page,
+      limit,
+      totalListings,
+      totalPages,
+      listings,
+    });
+
+  } catch (error) {
+    console.error('Error fetching agent listings:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+

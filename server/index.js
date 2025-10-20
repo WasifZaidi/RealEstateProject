@@ -71,14 +71,23 @@ app.use('/api/meeting', meetingRoutes)
 // Dashboard Routes
 const accessorRoutes = require("./Routes/Dashboard/accessorRoute")
 app.use("/api/dashboard", accessorRoutes );
-// Agent Profile Routes
-const agentRoute = require("./Routes/Dashboard/agentRoute");
-app.use("/api/dashboard", agentRoute);
 
 const agentFrontendRoutes =  require("./Routes/AgentRoute");
 app.use("/api", agentFrontendRoutes);
 
 
+// Agent Profile Routes
+const agentRoute = require("./Routes/Dashboard/agentRoute");
+app.use("/api/dashboard", agentRoute);
+
+
+// Listing Dashboard Routes
+const listingDashRoutes = require("../server/Routes/Dashboard/listingRoute")
+app.use("/api", listingDashRoutes)
+
+// Meeting Dashboard routes
+const dashboardMeetingRoutes = require("./Routes/Dashboard/meetingRoutes")
+app.use("/api/dashboard", dashboardMeetingRoutes);
 // Handle 404
 app.use((req, res, next) => {
   res.status(404).json({ success: false, message: "Route not found" });

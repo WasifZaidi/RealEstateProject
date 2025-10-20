@@ -1,15 +1,11 @@
-// app/layout.js
-import "../globals.css";
-import { inter } from "@/utils/fonts";
+// app/(authentication)/layout.js
 
-export default function RootLayout({ children }) {
+// Note: No <html> or <body> tags here!
+export default function AuthenticationLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className}`}>
-         <main className="bg-[#F2F3F7]">
-            {children}
-          </main>
-      </body>
-    </html>
+    // Main content wrapper for authentication pages
+    <main className="bg-[#F2F3F7] min-h-screen">
+      {children}
+    </main>
   );
 }

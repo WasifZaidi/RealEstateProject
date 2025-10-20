@@ -37,8 +37,6 @@ const meetingSchema = new mongoose.Schema(
       required: true,
     },
 
-
-
     agent: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -57,6 +55,10 @@ const meetingSchema = new mongoose.Schema(
     listing: {
       type: Schema.Types.ObjectId,
       ref: "Listing",
+    },
+
+    listing_publicId: {
+      type: String, required: true
     },
 
     type: {
@@ -90,10 +92,17 @@ const meetingSchema = new mongoose.Schema(
       email: { type: String, required: true },
     },
 
+    clientContacts: {
+      name: { type: String, required: true },
+      phone: { type: String, required: true },
+      email: { type: String, required: true },
+    },
+
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
     },
+
     meetingPublic_Id: { type: String, required: true },
 
     cancelledAt: {

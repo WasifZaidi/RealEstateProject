@@ -56,8 +56,6 @@ const locationSchema = new Schema({
   neighborhood: String
 });
 
-
-
 // Pricing Sub-schema
 const pricingSchema = new Schema({
   amount: {
@@ -215,11 +213,17 @@ const listingSchema = new Schema({
     type: String,
     required: true
   },
-  agent: {
-    type: String,
-    required: true
+  agentRef: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Agent',
+    required: true,
+    index: true,
   },
-  agentId: { type: String, required: true, unique: true },
+  agentId: {
+    type: String,
+    required: true,
+    index: true, 
+  },
   contactInfo: {
     name: String,
     phone: String,

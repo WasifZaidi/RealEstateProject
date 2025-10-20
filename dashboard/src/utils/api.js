@@ -103,3 +103,32 @@ export const uploadListing = async ({
     return { success: false, message: error.message || "Something went wrong" };
   }
 };
+
+export const getListing = async (id) => {
+    try {
+        const response = await fetch(`http://localhost:3001/api/dashboard/getListing/${id}`, {
+            method: 'GET',
+            credentials: "include",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching listing:', error);
+        throw error;
+    }
+};
+export const updateListing = async (id, formData) => {
+    try {
+        const response = await fetch(`http://localhost:3001/api/update/${id}`, {
+            method: 'POST',
+            credentials: "include",
+            body: formData,
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error updating listing:', error);
+        throw error;
+    }
+};

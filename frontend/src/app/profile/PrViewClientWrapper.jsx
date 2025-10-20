@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
@@ -18,6 +18,7 @@ import {
   Image as ImageIcon,
   CheckCircle,
   Clock,
+  AlertTriangle,
 } from "lucide-react";
 
 /**
@@ -45,6 +46,24 @@ const isValidEmail = (e) =>
 
 const isValidPhone = (p) =>
   typeof p === "string" && p.trim().length >= 6 && p.trim().length <= 25;
+
+/**
+ * Checks if the verification time is within the allowed window.
+ * @param {string | number | Date | undefined} verifiedAt - The timestamp of verification.
+ * @param {number} minutesAllowed - The maximum allowed time in minutes.
+ * @returns {boolean} True if the timestamp is present and within the time window.
+ */
+const isVerificationValid = (verifiedAt, minutesAllowed = 10) => {
+  if (!verifiedAt) return false;
+  try {
+    const verifiedTime = new Date(verifiedAt).getTime();
+    const currentTime = Date.now();
+    const differenceInMinutes = (currentTime - verifiedTime) / (1000 * 60);
+    return differenceInMinutes < minutesAllowed;
+  } catch {
+    return false;
+  }
+};
 
 /**
  * -------------------------
@@ -157,6 +176,7 @@ const SingleFieldEdit = React.forwardRef(
           name={fieldName}
           value={currentValue}
           onChange={onChange}
+          // Assuming 'normal_input' and 'pl_2' are defined in a global CSS file
           className={`normal_input ${Icon ? "pl_2" : ""}`}
           placeholder={placeholder}
           autoComplete="off"
@@ -182,8 +202,7 @@ const PrViewClientWrapper = ({ data }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // email verification state (if backend provides this flag)
-  const [isPasswordVerified, setIsPasswordVerified] = useState(!!safe(() => data.emailChangeVerified, false));
+  // password verification state and input
   const [passwordInput, setPasswordInput] = useState("");
 
   // profile image state
@@ -204,12 +223,29 @@ const PrViewClientWrapper = ({ data }) => {
 
   const inputRef = useRef(null);
 
+  /**
+   * MEMOIZED CALCULATION FOR VERIFICATION STATE
+   * This is the core logic update.
+   */
+  const isPasswordVerifiedRecently = useMemo(() => {
+    // Check if the verification flag is set AND the timestamp is within 10 minutes
+    const verifiedFlag = safe(() => userData.emailChangeVerified, false);
+    const verifiedAt = safe(() => userData.emailChangeVerifiedAt);
+
+    if (verifiedFlag && verifiedAt) {
+      return isVerificationValid(verifiedAt, 10);
+    }
+    return false;
+  }, [userData.emailChangeVerified, userData.emailChangeVerifiedAt]);
+  // ---------------------------------------------
+
   // Keep local state in sync if parent data updates
   useEffect(() => {
     if (data) {
       setUserData(data);
       setProfileImage((prev) => ({ ...prev, preview: safe(() => data?.ProfilePicture?.url, prev.preview) }));
-      setIsPasswordVerified(!!safe(() => data.emailChangeVerified, false));
+      // Note: We no longer track isPasswordVerified as simple boolean from data,
+      // it's now derived from data.emailChangeVerifiedAt in isPasswordVerifiedRecently.
     }
   }, [data]);
 
@@ -222,9 +258,7 @@ const PrViewClientWrapper = ({ data }) => {
         } catch {}
       }
     };
-    // we purposely do not add profileImage to deps to avoid frequent revokes;
-    // on unmount we'll revoke the most recent created object URL
-  }, []);
+  }, []); // Empty dependency array, cleanup only on unmount
 
   // Convenience: mapping incoming modal-friendly field names to backend schema keys
   const FIELD_MAP = {
@@ -265,7 +299,7 @@ const PrViewClientWrapper = ({ data }) => {
 
     const trimmed = value ? value.trim() : "";
 
-    // validation per-field
+    // validation per-field (omitted for brevity, assume original logic is fine)
     if (backendKey === "Email" && !isValidEmail(trimmed)) {
       toast.error("Please enter a valid email address.");
       return;
@@ -355,7 +389,7 @@ const PrViewClientWrapper = ({ data }) => {
     }
   };
 
-  // Image change handler
+  // Image change handler (omitted for brevity, assume original logic is fine)
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -380,7 +414,7 @@ const PrViewClientWrapper = ({ data }) => {
     fileInputRef.current?.click();
   };
 
-  // Upload profile image to backend
+  // Upload profile image to backend (omitted for brevity, assume original logic is fine)
   const handleSaveProfileImage = async () => {
     if (!profileImage.file) {
       toast("Please select an image to upload.", { icon: "ℹ️" });
@@ -402,6 +436,7 @@ const PrViewClientWrapper = ({ data }) => {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message || "Failed to upload image.");
 
+      // Important: Ensure the server response includes the updated user data
       setUserData((prev) => ({ ...prev, ...(json.user || {}) }));
       setProfileImage({
         file: null,
@@ -439,9 +474,21 @@ const PrViewClientWrapper = ({ data }) => {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message || "Invalid credentials");
 
-      toast.success("Password verified successfully!");
-      setIsPasswordVerified(true);
-      setUserData((prev) => ({ ...prev, ...(json.user || {}) }));
+      toast.success("Password verified successfully! You have 10 minutes to change your email.");
+      setPasswordInput(""); // Clear password input
+
+      /**
+       * Crucial update: Set emailChangeVerified and emailChangeVerifiedAt in local state
+       * to reflect the successful verification, which will update the useMemo hook.
+       * The backend *should* also update these fields on the server.
+       */
+      setUserData((prev) => ({
+        ...prev,
+        ...json.user, // Merge user data from backend response
+        emailChangeVerified: true,
+        emailChangeVerifiedAt: new Date().toISOString(), // Use client-side time for immediate UI update, relying on server for persistence
+      }));
+
       setActiveModal(null);
 
       // After verifying, open email change modal to enter new email
@@ -455,7 +502,7 @@ const PrViewClientWrapper = ({ data }) => {
     }
   };
 
-  // helper to compute initials
+  // helper to compute initials (omitted for brevity, assume original logic is fine)
   const getInitials = (name) =>
     (name || "")
       .split(" ")
@@ -464,7 +511,7 @@ const PrViewClientWrapper = ({ data }) => {
       .toUpperCase()
       .slice(0, 2) || "U";
 
-  // Modal definitions
+  // Modal definitions (omitted for brevity, assume original logic is fine)
   const modals = {
     userName: {
       title: "Edit Username",
@@ -489,7 +536,7 @@ const PrViewClientWrapper = ({ data }) => {
         <>
           <p className="text-sm text-gray-500 mb-4 bg-blue-50 p-3 rounded-lg flex items-center space-x-2">
             <Shield className="w-4 h-4 text-blue-600" />
-            <span>Changing your email requires password re-verification and a new OTP.</span>
+            <span>A new email will be verified with an OTP. **Password is verified for this session.**</span>
           </p>
           <SingleFieldEdit
             ref={inputRef}
@@ -507,6 +554,7 @@ const PrViewClientWrapper = ({ data }) => {
       saveDisabled:
         tempEditValue.value.trim() === safe(() => userData.Email, "") ||
         !tempEditValue.value.trim() ||
+        !isValidEmail(tempEditValue.value) || // Added extra validation for saving an email
         isLoading,
     },
     PhoneNumber: {
@@ -529,13 +577,13 @@ const PrViewClientWrapper = ({ data }) => {
     },
     profileImage: {
       title: "Update Profile Picture",
+      // ... content (omitted)
       content: (
         <div className="space-y-6">
           <div className="text-center">
             <div className="relative inline-block">
               <div className="w-32 h-32 rounded-full bg-gray-100 border-4 border-blue-200 flex items-center justify-center mx-auto overflow-hidden">
                 {profileImage.preview ? (
-                  // prefer local preview when newly selected, otherwise server URL
                   <img src={profileImage.preview} alt="Profile preview" className="w-full h-full object-cover" />
                 ) : (
                   <div className="text-blue-600 text-3xl font-bold">{getInitials(userData?.userName)}</div>
@@ -598,12 +646,12 @@ const PrViewClientWrapper = ({ data }) => {
       saveDisabled: !profileImage.file || isLoading,
     },
     passwordVerify: {
-      title: "Verify Password",
+      title: "Verify Password for Email Change",
       content: (
         <>
           <p className="text-sm text-gray-500 mb-4 bg-yellow-50 p-3 rounded-lg flex items-center space-x-2">
             <Shield className="w-4 h-4 text-yellow-600" />
-            <span>To change your email, please verify your password first.</span>
+            <span>For your security, you must verify your password before changing your email address. **Verification lasts for 10 minutes.**</span>
           </p>
           <SingleFieldEdit
             ref={inputRef}
@@ -627,9 +675,11 @@ const PrViewClientWrapper = ({ data }) => {
   const DetailField = ({ label, value, Icon, fieldName, fieldType = "text" }) => {
     const handleEditClick = () => {
       if (fieldName === "Email") {
-        if (!isPasswordVerified) {
+        if (!isPasswordVerifiedRecently) {
+          // If not recently verified, open password verification modal
           setActiveModal("passwordVerify");
         } else {
+          // If recently verified, proceed to email change modal
           openEditModal(fieldName, label, safe(() => userData[fieldName], ""), fieldType, Icon);
         }
       } else {
@@ -682,7 +732,7 @@ const PrViewClientWrapper = ({ data }) => {
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8">
             <div className="flex items-center space-x-4">
               <div className="relative">
-                {profileImage.preview || safe(() => userData.ProfilePicture.url, null) ? (
+                {profileImage.preview || safe(() => userData.ProfilePicture?.url, null) ? (
                   <img
                     src={profileImage.preview || safe(() => userData.ProfilePicture.url, "")}
                     alt="Profile"
@@ -770,25 +820,32 @@ const PrViewClientWrapper = ({ data }) => {
                   </div>
                 </div>
 
+                {/* UPDATED Security Status Display */}
                 <div
-                  className={`flex items-center space-x-3 p-4 rounded-xl border ${
-                    safe(() => userData.emailChangeVerified, false) ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"
+                  className={`flex items-start space-x-3 p-4 rounded-xl border ${
+                    isPasswordVerifiedRecently ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"
                   }`}
                 >
-                  {safe(() => userData.emailChangeVerified, false) ? (
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  {isPasswordVerifiedRecently ? (
+                    <CheckCircle className="flex-shrink-0 w-5 h-5 text-green-600 mt-0.5" />
                   ) : (
-                    <Clock className="w-5 h-5 text-yellow-600" />
+                    <AlertTriangle className="flex-shrink-0 w-5 h-5 text-yellow-600 mt-0.5" />
                   )}
                   <div>
                     <p className="text-sm font-bold text-gray-900">Email Change Security</p>
-                    <p className={`text-xs ${safe(() => userData.emailChangeVerified, false) ? "text-green-700" : "text-yellow-700"}`}>
-                      {safe(() => userData.emailChangeVerified, false)
-                        ? `Password re-verified recently${safe(() => userData.emailChangeVerifiedAt) ? ` (${new Date(userData.emailChangeVerifiedAt).toLocaleString()})` : "."}`
-                        : "Password re-verification is required before changing your email."}
+                    <p className={`text-xs ${isPasswordVerifiedRecently ? "text-green-700" : "text-yellow-700"} mt-0.5`}>
+                      {isPasswordVerifiedRecently
+                        ? `Password re-verified recently. Verification is active for 10 minutes.`
+                        : "Password re-verification is required before changing your email for security."}
                     </p>
+                    {safe(() => userData.emailChangeVerifiedAt) && (
+                      <p className={`text-xs text-gray-600 mt-1`}>
+                        Last verification: {new Date(userData.emailChangeVerifiedAt).toLocaleString()}
+                      </p>
+                    )}
                   </div>
                 </div>
+                {/* END UPDATED Security Status Display */}
               </div>
             </div>
           </div>

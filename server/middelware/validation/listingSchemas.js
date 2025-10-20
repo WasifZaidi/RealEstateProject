@@ -108,6 +108,69 @@ const createListingSchema = Joi.object({
   }).optional()
 }).options({ abortEarly: false });
 
+const updateListingSchema = Joi.object({
+  // Basic Information
+  title: Joi.string().trim().max(200).optional().messages({
+    'string.max': 'Title cannot exceed 200 characters'
+  }),
+  description: Joi.string().trim().max(5000).optional(),
+
+  // Property Classification
+  propertyType: Joi.object({
+    category: Joi.string().valid('Residential', 'Plot', 'Commercial', 'Industrial').optional(),
+    subType: Joi.string().valid(
+      'apartment', 'house', 'villa', 'condo', 'townhouse',
+      'commercial-plot', 'residential-plot', 'agricultural-plot', 'industrial-plot',
+      'office', 'retail', 'warehouse', 'restaurant',
+      'factory', 'storage', 'manufacturing'
+    ).optional()
+  }).optional(),
+
+  // Location
+  location: locationSchema.optional(),
+
+  propertyFor: Joi.string().valid('Sell', 'Rent').optional().messages({
+    'any.only': 'Property for must be either Sell or Rent'
+  }),
+
+  // Pricing
+  price: pricingSchema.optional(),
+
+  // Property Details
+  details: propertyDetailsSchema.optional(),
+
+  // Amenities
+  amenities: Joi.array().items(
+    Joi.string().valid(
+      'balcony', 'garden', 'fireplace', 'pool',
+      'modern-kitchen', 'dishwasher', 'microwave',
+      'ac', 'heating', 'washer-dryer',
+      'security-system', 'gated-community', 'cctv',
+      'parking', 'garage', 'patio',
+      'furnished', 'pet-friendly', 'wheelchair-accessible',
+      'high-speed-internet', 'smart-home'
+    )
+  ).optional(),
+
+  // Status and Visibility
+  status: Joi.string().valid('draft', 'active', 'pending', 'sold', 'expired', 'archived').optional(),
+  isFeatured: Joi.boolean().optional(),
+  isPremium: Joi.boolean().optional(),
+  visibility: Joi.string().valid('public', 'private', 'unlisted').optional(),
+
+  // Media Management
+  deleteMedia: Joi.array().items(Joi.string()).optional(),
+  coverPhotoIndex: Joi.number().integer().min(0).optional(),
+
+  // Contact Info
+  contactInfo: Joi.object({
+    name: Joi.string().trim().optional(),
+    phone: Joi.string().pattern(/^\+?[\d\s\-\(\)]+$/).optional(),
+    email: Joi.string().email().optional(),
+    showContact: Joi.boolean().optional()
+  }).optional()
+}).options({ abortEarly: false });
+
 // Filter schema for GET listings
 
 const PROPERTY_TYPES = {
@@ -190,6 +253,7 @@ const idParamSchema = Joi.object({
 
 module.exports = {
   createListingSchema,
+  updateListingSchema,
   filterListingSchema,
   idParamSchema
 };

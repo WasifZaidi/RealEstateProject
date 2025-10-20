@@ -5,7 +5,7 @@ const { nanoid } = require("nanoid");
 
 exports.createTour = async (req, res) => {
   try {
-    const { agentId, date, notes, listingId } = req.body;
+    const { agentId, date, notes, listingId, clientContacts } = req.body;
     const client = req.user?.id;
 
     // 1️⃣ Validate required fields
@@ -13,6 +13,19 @@ exports.createTour = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Missing required fields: client, agentId, date, or listingId.",
+      });
+    }
+
+    // 2️⃣ Validate client contacts
+    if (
+      !clientContacts ||
+      !clientContacts.name ||
+      !clientContacts.phone ||
+      !clientContacts.email
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required client contact details (name, phone, email).",
       });
     }
 
@@ -24,7 +37,7 @@ exports.createTour = async (req, res) => {
       });
     }
 
-    // 2️⃣ Check if user recently cancelled 2 or more tours
+    // 3️⃣ Check if user recently cancelled 2 or more tours
     const recentCancelledTours = await Meeting.find({ cancelledBy: client })
       .sort({ cancelledAt: -1 })
       .limit(2)
@@ -43,15 +56,15 @@ exports.createTour = async (req, res) => {
 
           return res.status(403).json({
             success: false,
-            message: `You’ve exceeded the cancellation limit. You can schedule a new tour after ${remainingDays} day(s).`,
+            message: `You've exceeded the cancellation limit. You can schedule a new tour after ${remainingDays} day(s).`,
             nextAllowedDate,
           });
         }
       }
     }
 
-    // 3️⃣ Find the agent
-    const agentData = await Agent.findOne({ agentId }).populate("user", "email");
+    // 4️⃣ Find the agent
+    const agentData = await Agent.findOne({ agentId }).populate("user", "Email");
     if (!agentData) {
       return res.status(404).json({
         success: false,
@@ -59,7 +72,7 @@ exports.createTour = async (req, res) => {
       });
     }
 
-    // 4️⃣ Validate listing & location
+    // 5️⃣ Validate listing & location
     const foundListing = await Listing.findById(listingId).select("location");
     if (
       !foundListing ||
@@ -72,7 +85,7 @@ exports.createTour = async (req, res) => {
       });
     }
 
-    // 5️⃣ Prevent duplicate tour on same day with same agent
+    // 6️⃣ Prevent duplicate tour on same day with same agent
     const existingTour = await Meeting.findOne({
       client,
       agentId,
@@ -87,23 +100,26 @@ exports.createTour = async (req, res) => {
       });
     }
 
-    // 6️⃣ Generate meeting public ID
+    // 7️⃣ Generate meeting public ID
     const meetingPublic_Id = `Met-${nanoid(10)}`;
 
-    // 7️⃣ Prepare agent contact details (snapshot for future reference)
+    console.log(agentData)
+
+    // 8️⃣ Snapshot agent contacts
     const agentContacts = {
       firstName: agentData.profile.firstName,
       lastName: agentData.profile.lastName,
       phone: agentData.profile.phone,
-      email: agentData.profile.email,
+      email: agentData.user.Email,
     };
 
-    // 8️⃣ Save new meeting
+    // 9️⃣ Create new meeting
     const newMeeting = await Meeting.create({
       client,
       agent: agentData.user._id,
       agentId: agentData.agentId,
       listing: listingId,
+      listing_publicId: "LI-123456",
       type: "Tour",
       date: parsedDate,
       notes,
@@ -112,9 +128,10 @@ exports.createTour = async (req, res) => {
       meetingPublic_Id,
       createdBy: req.user._id,
       agentContacts,
+      clientContacts, // ✅ Save client contact info from frontend
     });
 
-    // 9️⃣ Send success response
+    // 🔟 Send success response
     return res.status(201).json({
       success: true,
       message: "Tour scheduled successfully.",
@@ -129,6 +146,7 @@ exports.createTour = async (req, res) => {
     });
   }
 };
+
 
 exports.getAgentMeetingDates = async (req, res) => {
   try {

@@ -34,7 +34,7 @@ export async function getCurrentAccessor() {
       "http://localhost:3001";
 
     // ✅ Securely call backend to verify session
-    const res = await safeFetch(`${baseUrl}/api/dashboard/accessor`, {
+    const res = await safeFetch(`http://localhost:3001/api/dashboard/accessor`, {
       headers: {
         Cookie: `access_token_realEstate=${token}`,
         "Content-Type": "application/json",
@@ -67,8 +67,8 @@ export async function getCurrentAccessor() {
     // ✅ Return sanitized user object
     return {
       _id: data.user._id,
-      name: data.user.name,
-      email: data.user.email,
+      name: data.user.userName,
+      email: data.user.Email,
       role: data.user.role,
       isVerifiedAgent: data.user.isVerifiedAgent,
       // Add only safe public fields — never tokens or passwords

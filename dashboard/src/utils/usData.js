@@ -41,7 +41,7 @@ export const US_CITIES = {
     Ohio: ["Columbus", "Cleveland", "Cincinnati", "Toledo", "Akron"],
     Oklahoma: ["Oklahoma City", "Tulsa", "Norman", "Broken Arrow"],
     Oregon: ["Portland", "Salem", "Eugene", "Bend", "Medford"],
-    Pennsylvania: ["Philadelphia", "Pittsburgh", "Harrisburg", "Allentown"],
+    Pennsylvania: ["Philadelphia", "Pittsburgh", "Harrisburg", "Allentown", "Dessiebury"],
     "Rhode Island": ["Providence", "Warwick", "Cranston", "Newport"],
     "South Carolina": ["Columbia", "Charleston", "Greenville", "Myrtle Beach"],
     "South Dakota": ["Sioux Falls", "Rapid City", "Pierre"],

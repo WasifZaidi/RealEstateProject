@@ -93,7 +93,8 @@ async function seedListings(count = 100) {
       isPremium: faker.datatype.boolean(),
       visibility: 'public',
       owner: faker.person.fullName(),
-      agent: faker.person.fullName(),
+      agentRef: "68f404e3893ffb2fe0d7f317",
+      agentId: "Agt-zTkvD5LzRX",
       contactInfo: {
         name: faker.person.fullName(),
         phone: faker.phone.number(),

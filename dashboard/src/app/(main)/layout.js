@@ -1,25 +1,21 @@
-// app/layout.js
-import "../globals.css";
-import { inter } from "@/utils/fonts";
+// app/(main)/layout.js
 import Navbar from "../components/Navbar";
 import { getCurrentAccessor } from "@/lib/getCurrentAccessor";
 
-export default async function RootLayout({ children }) {
-  const user = await getCurrentAccessor();
+// Note: No <html> or <body> tags here!
+export default function MainLayout({ children }) {
+  // You can fetch data here if needed for components like Navbar
+  // const user = getCurrentAccessor(); 
 
   return (
-    <html lang="en">
-      <body
-        className={`${inter.className} antialiased min-h-screen flex bg-[#F2F3F7]`}
-      >
-        {/* ✅ Pass user to Navbar */}
-        <Navbar user={user} />
+    // Outer flex structure and background for the main content area
+    <div className="flex bg-[#F2F3F7]">
+      <Navbar /> 
 
-        {/* Main Content */}
-        <main className="flex-1 md:ml-[250px] py-5 px-4 md:px-8 overflow-x-hidden transition-all duration-300">
-          {children}
-        </main>
-      </body>
-    </html>
+      {/* Main Content Area */}
+      <main className="flex-1 md:ml-[250px] py-5 px-4 md:px-8 overflow-x-hidden transition-all duration-300">
+        {children}
+      </main>
+    </div>
   );
 }

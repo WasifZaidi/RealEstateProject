@@ -57,4 +57,5 @@ router.get(
   ListingController.getListingByFilter
 );
 
+
 module.exports = router;
