@@ -1,4 +1,5 @@
 const Listing = require("../../Model/Listing");
+const Meeting = require("../../Model/Meeting");
 const cloudinary = require('../../utils/cloudinary'); // Assuming Cloudinary utility
 const FileCleanupManager = require('../../utils/fileCleanup'); // Assuming local file cleanup utility
 const { v4: uuidv4 } = require("uuid")
@@ -127,70 +128,70 @@ exports.updateListing = async (req, res) => {
     // a) Handle deletions
     if (removedMediaIds.length > 0) {
       console.log('🗑️ Removing media:', removedMediaIds);
-      
+
       // Delete from Cloudinary
-      const deletePromises = removedMediaIds.map(publicId => 
-        cloudinary.uploader.destroy(publicId).catch(err => 
+      const deletePromises = removedMediaIds.map(publicId =>
+        cloudinary.uploader.destroy(publicId).catch(err =>
           console.warn(`Failed to delete ${publicId} from Cloudinary:`, err.message)
         )
       );
       await Promise.all(deletePromises);
-      
+
       // Remove from listing document
       listing.media = listing.media.filter(m => !removedMediaIds.includes(m.public_id));
     }
 
     // b) Upload new files - FIXED: Use frontend temp IDs
     // b) Upload new files - MINIMAL FIX
-let newMedia = [];
-if (req.files && req.files.length > 0) {
-  // Check total media limit
-  const totalMediaAfterDeletion = listing.media.length + req.files.length;
-  if (totalMediaAfterDeletion > 12) {
-    throw new Error('VALIDATION_ERROR: Cannot have more than 12 total files.');
-  }
+    let newMedia = [];
+    if (req.files && req.files.length > 0) {
+      // Check total media limit
+      const totalMediaAfterDeletion = listing.media.length + req.files.length;
+      if (totalMediaAfterDeletion > 12) {
+        throw new Error('VALIDATION_ERROR: Cannot have more than 12 total files.');
+      }
 
-  console.log('📤 Uploading new files with temp IDs:', mediaTempIds);
+      console.log('📤 Uploading new files with temp IDs:', mediaTempIds);
 
-  // Get new file identifiers from mediaOrder
-  const newFileIdentifiers = mediaOrderFromClient.filter(id => id.startsWith('new-'));
-  
-  for (let i = 0; i < req.files.length; i++) {
-    const file = req.files[i];
-    try {
-      const uploadResult = await cloudinary.uploader.upload(file.path, {
-        resource_type: file.mimetype.startsWith('video/') ? 'video' : 'image',
-        folder: `listings/${listing.owner}`,
-        public_id: `listing_${listingId}_${Date.now()}_${i}`,
-        quality: 'auto',
-        fetch_format: 'auto'
-      });
+      // Get new file identifiers from mediaOrder
+      const newFileIdentifiers = mediaOrderFromClient.filter(id => id.startsWith('new-'));
 
-      cloudinaryPublicIds.push(uploadResult.public_id);
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        try {
+          const uploadResult = await cloudinary.uploader.upload(file.path, {
+            resource_type: file.mimetype.startsWith('video/') ? 'video' : 'image',
+            folder: `listings/${listing.owner}`,
+            public_id: `listing_${listingId}_${Date.now()}_${i}`,
+            quality: 'auto',
+            fetch_format: 'auto'
+          });
 
-      // Use temp ID from mediaOrder, fallback to array index
-      const tempId = newFileIdentifiers[i] || mediaTempIds[i] || `new-${Date.now()}-${i}`;
-      
-      newMedia.push({
-        public_id: uploadResult.public_id,
-        url: uploadResult.secure_url,
-        resource_type: uploadResult.resource_type,
-        bytes: uploadResult.bytes,
-        duration: uploadResult.duration || null,
-        tempId: tempId
-      });
+          cloudinaryPublicIds.push(uploadResult.public_id);
 
-      console.log('✅ Uploaded:', uploadResult.public_id, 'with tempId:', tempId, 'for file:', file.originalname);
-    } catch (uploadError) {
-      console.error('❌ Upload failed for file:', file.originalname, uploadError);
-      throw new Error(`MEDIA_UPLOAD_ERROR: Failed to upload ${file.originalname}`);
+          // Use temp ID from mediaOrder, fallback to array index
+          const tempId = newFileIdentifiers[i] || mediaTempIds[i] || `new-${Date.now()}-${i}`;
+
+          newMedia.push({
+            public_id: uploadResult.public_id,
+            url: uploadResult.secure_url,
+            resource_type: uploadResult.resource_type,
+            bytes: uploadResult.bytes,
+            duration: uploadResult.duration || null,
+            tempId: tempId
+          });
+
+          console.log('✅ Uploaded:', uploadResult.public_id, 'with tempId:', tempId, 'for file:', file.originalname);
+        } catch (uploadError) {
+          console.error('❌ Upload failed for file:', file.originalname, uploadError);
+          throw new Error(`MEDIA_UPLOAD_ERROR: Failed to upload ${file.originalname}`);
+        }
+      }
     }
-  }
-}
 
     // c) Reconstruct final media array with proper mapping
     let finalMedia = [];
-    
+
     // Create maps for existing and new media
     const existingMediaMap = new Map(listing.media.map(m => [m.public_id, m]));
     const newMediaMap = new Map(newMedia.map(m => [m.tempId, m]));
@@ -223,7 +224,7 @@ if (req.files && req.files.length > 0) {
       if (mediaItem) {
         // Remove tempId from final object (not needed in database)
         const { tempId, ...cleanMedia } = mediaItem.toObject ? mediaItem.toObject() : mediaItem;
-        
+
         finalMedia.push({
           ...cleanMedia,
           isCover: cleanMedia.public_id === coverMediaPublicId,
@@ -287,7 +288,7 @@ if (req.files && req.files.length > 0) {
 
     await listing.save({ session });
     await session.commitTransaction();
-    
+
     // Cleanup temp files
     await FileCleanupManager.cleanupFiles(tempFiles);
 
@@ -296,8 +297,8 @@ if (req.files && req.files.length > 0) {
     return res.status(200).json({
       success: true,
       message: "Listing updated successfully.",
-      data: { 
-        id: listing._id, 
+      data: {
+        id: listing._id,
         title: listing.title,
         mediaCount: listing.media.length
       }
@@ -351,5 +352,90 @@ if (req.files && req.files.length > 0) {
     });
   } finally {
     session.endSession();
+  }
+};
+
+exports.deleteListing = async (req, res) => {
+  try {
+    const { listingId } = req.params;
+    const userId = req.user.id;
+
+    if (!listingId) {
+      return res.status(400).json({
+        success: false,
+        message: "Listing ID is required.",
+      });
+    }
+
+    // 1️⃣ Verify Listing
+    const listing = await Listing.findById(listingId);
+    if (!listing) {
+      return res.status(404).json({
+        success: false,
+        message: "Listing not found.",
+      });
+    }
+
+    // 2️⃣ Verify Ownership
+    if (listing.agentRef.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized — you can only delete your own listings.",
+      });
+    }
+
+    // 3️⃣ Check if any active/scheduled meetings exist
+    const hasActiveMeetings = await Meeting.exists({
+      listing: listing._id,
+      status: { $in: ["Scheduled", "Pending"] }, // optional statuses
+    });
+
+    // 4️⃣ If meetings exist → Soft delete
+    if (hasActiveMeetings) {
+      listing.status = "inactive";
+      listing.deletedAt = new Date();
+      listing.deletedBy = userId;
+      await listing.save();
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Listing has active scheduled meetings, so it was marked as inactive instead of being deleted.",
+        listing,
+      });
+    }
+
+    // 5️⃣ No active meetings → Delete permanently
+    // Step A: Delete media from Cloudinary (safe & parallel)
+    if (listing.media && listing.media.length > 0) {
+      const deletePromises = listing.media.map((media) =>
+        cloudinary.uploader.destroy(media.public_id, {
+          resource_type: media.resource_type || "image",
+        })
+      );
+
+      try {
+        await Promise.allSettled(deletePromises);
+      } catch (cloudErr) {
+        console.error("Cloudinary cleanup failed:", cloudErr);
+        // Don't abort listing deletion if Cloudinary fails
+      }
+    }
+
+    // Step B: Delete listing itself
+    await Listing.findByIdAndDelete(listingId);
+
+    // 6️⃣ Respond success
+    return res.status(200).json({
+      success: true,
+      message: "Listing deleted successfully (no active meetings found).",
+    });
+  } catch (error) {
+    console.error("❌ Error deleting listing:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error while deleting listing.",
+      error: error.message,
+    });
   }
 };

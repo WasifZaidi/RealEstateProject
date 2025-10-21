@@ -202,7 +202,7 @@ exports.getMeetingById = async (req, res) => {
         message: "Missing meeting ID",
       });
     }
-    
+
 
 
     // Find the meeting by its public ID
@@ -229,7 +229,8 @@ exports.getMeetingById = async (req, res) => {
         location: meeting.location, // important for frontend
         client: meeting.client,
         agentContacts: meeting.agentContacts,
-        createdAt: meeting.cancelledAt
+        createdAt: meeting.cancelledAt,
+        agentId: meeting.agentId,
       },
     });
   } catch (error) {
@@ -302,6 +303,166 @@ exports.cancelTour = async (req, res) => {
   } catch (error) {
     console.error("❌ Tour cancellation error:", error);
     res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
+// Rescheduleing 
+
+exports.rescheduleMeetingOrTour = async (req, res) => {
+  try {
+    const { meetingId } = req.params;
+    const { newDate, reason } = req.body;
+    const userId = req.user?.id;
+
+    if (!meetingId || !newDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Meeting ID and new date are required.",
+      });
+    }
+
+    const parsedNewDate = new Date(newDate);
+    if (isNaN(parsedNewDate)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format.",
+      });
+    }
+
+    // 1️⃣ Find meeting
+    const meeting = await Meeting.findOne({ meetingPublic_Id: meetingId })
+      .populate("client", "Email userName")
+      .populate("agent", "user");
+
+    if (!meeting) {
+      return res.status(404).json({
+        success: false,
+        message: "Meeting not found.",
+      });
+    }
+
+    // 2️⃣ Authorization check
+    const isAgent = meeting.agent.toString() === userId;
+    const isUser = meeting.client.toString() === userId;
+
+    if (!isAgent && !isUser) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to reschedule this meeting.",
+      });
+    }
+
+    // 3️⃣ Prevent rescheduling cancelled/completed meetings
+    if (["Cancelled", "Completed"].includes(meeting.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot reschedule a ${meeting.status.toLowerCase()} meeting.`,
+      });
+    }
+
+    // 4️⃣ Check for date conflicts
+    const existingMeeting = await Meeting.findOne({
+      agent: meeting.agent,
+      date: parsedNewDate,
+      status: "Scheduled",
+    });
+
+    if (existingMeeting) {
+      return res.status(400).json({
+        success: false,
+        message: "This date/time is already booked with the agent.",
+      });
+    }
+
+    // 5️⃣ Record history
+    const oldDate = meeting.date;
+    meeting.rescheduleHistory.push({
+      oldDate,
+      newDate: parsedNewDate,
+      reason: reason || "No reason provided",
+      rescheduledBy: userId,
+    });
+
+    meeting.rescheduleCount = (meeting.rescheduleCount || 0) + 1;
+    meeting.date = parsedNewDate;
+    meeting.status = "Scheduled";
+    meeting.updatedAt = new Date();
+
+    await meeting.save();
+
+    // 6️⃣ Fetch agent info
+    const agent = await Agent.findOne({ user: meeting.agent._id });
+    const agentEmail = agent?.agentContacts?.email;
+    const userEmail = meeting.client.Email;
+
+    // 7️⃣ Prepare and send notification emails
+    const formattedDate = parsedNewDate.toLocaleString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+
+    if (isAgent) {
+      // Email to User
+      await sendEmail({
+        to: userEmail,
+        subject: "Your Tour Has Been Rescheduled 🏡",
+        text: `
+Hello ${meeting.client.userName},
+
+Your scheduled property tour has been updated by your agent.
+
+🗓️ New Date & Time: ${formattedDate}
+💬 Reason: ${reason || "No reason provided"}
+
+Please check your account for updated details.
+
+Best regards,  
+The Real Estate Team
+        `,
+      });
+    } else if (isUser) {
+      // Email to Agent
+      await sendEmail({
+        to: agentEmail,
+        subject: "A Client Has Rescheduled Their Tour 📅",
+        text: `
+Hello ${agent.agentContacts.firstName},
+
+Your client has requested to reschedule the tour.
+
+🗓️ New Date & Time: ${formattedDate}
+💬 Reason: ${reason || "No reason provided"}
+
+Please review and confirm in your dashboard.
+
+Best regards,  
+The Real Estate Team
+        `,
+      });
+    }
+
+    // 8️⃣ Response
+    return res.status(200).json({
+      success: true,
+      message: "Meeting rescheduled successfully and notifications sent.",
+      data: {
+        meetingPublic_Id: meeting.meetingPublic_Id,
+        oldDate,
+        newDate: parsedNewDate,
+        rescheduleCount: meeting.rescheduleCount,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Reschedule error:", error);
+    return res.status(500).json({
       success: false,
       message: "Internal Server Error",
       error: error.message,

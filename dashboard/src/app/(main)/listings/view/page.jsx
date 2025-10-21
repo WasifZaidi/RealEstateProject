@@ -1,12 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Pagination } from '@mui/material';
-import { 
-  Search, 
-  Home, 
-  Eye, 
-  Star, 
-  Settings, 
+import {
+  Search,
+  Home,
+  Eye,
+  Star,
+  Settings,
   X,
   Edit,
   Trash2,
@@ -14,6 +14,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import CustomToast from '@/app/components/CustomToast';
 
 const ManageListingsPage = () => {
   const [listings, setListings] = useState([]);
@@ -23,6 +24,12 @@ const ManageListingsPage = () => {
   const [totalListings, setTotalListings] = useState(0);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [confirmInput, setConfirmInput] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedListPublic_id, setSelectedListPublic_id] = useState(null);
+  const [selectedList_id, setSelectedList_id] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [toast, setToast] = useState(null)
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -59,13 +66,13 @@ const ManageListingsPage = () => {
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
         setListings(data.listings);
         console.log(data.listings)
         setTotalPages(data.totalPages);
         setTotalListings(data.totalListings);
-        
+
         // Calculate stats (you might want to get this from a separate endpoint)
         calculateStats(data.listings);
       }
@@ -100,6 +107,72 @@ const ManageListingsPage = () => {
     setPage(1);
   };
 
+  // Open Confirm 
+  const handelOpenConfirm = (public_id, id) => {
+    setSelectedListPublic_id(public_id);
+    setSelectedList_id(id)
+    setConfirmOpen(true);
+    setConfirmInput("");
+  }
+
+  const handelCloseConfirm = (id) => {
+    setSelectedListPublic_id("")
+    setConfirmOpen(false);
+    setConfirmInput("");
+  }
+
+  const handelDelete = async (id) => {
+    try {
+      if (loading) return;
+      setDeleteLoading(true);
+      setSelectedList_id(id);
+
+      if (!selectedListPublic_id) {
+        setToast({ type: "error", message: `No meeting selected.` });
+        return;
+      }
+
+      if (confirmInput.trim() !== selectedListPublic_id) {
+        setToast({ type: "error", message: `Meeting ID confirmation does not match.` });
+        return;
+      }
+
+      const response = await fetch(`http://localhost:3001/api/dashboard/listing/${selectedList_id}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete listing");
+      }
+
+      // ✅ Show success toast
+      setToast({
+        type: "success",
+        message: data.message || "Listing deleted successfully.",
+      });
+
+      // Optionally refresh listings or remove deleted one from state
+      setListings((prev) => prev.filter((l) => l._id !== id));
+    } catch (error) {
+      console.error("Delete listing error:", error);
+      setToast({
+        type: "error",
+        message: error.message || "An unexpected error occurred while deleting listing.",
+      });
+    } finally {
+      setDeleteLoading(false);
+      setConfirmOpen(false);
+      setConfirmInput("")
+      setSelectedList_id(null);
+    }
+  };
+
   const getStatusChipColor = (status) => {
     const colors = {
       active: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', dot: 'bg-green-500' },
@@ -127,8 +200,8 @@ const ManageListingsPage = () => {
   };
 
   const router = useRouter();
-  const handelPushToEdit = (id) =>{
-  router.push(`/listings/update/${id}`)
+  const handelPushToEdit = (id) => {
+    router.push(`/listings/update/${id}`)
   }
   return (
     <div className="min-h-screen rounded-[20px] bg-white px-4 sm:px-6 py-6 max-w-6xl w-[95%] mx-auto py-8">
@@ -150,7 +223,7 @@ const ManageListingsPage = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search by title or description..."
+              placeholder="Search by title"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -180,7 +253,7 @@ const ManageListingsPage = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
@@ -192,7 +265,7 @@ const ManageListingsPage = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
@@ -204,7 +277,7 @@ const ManageListingsPage = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
@@ -222,41 +295,37 @@ const ManageListingsPage = () => {
       <div className="flex flex-wrap gap-2 mb-6">
         <button
           onClick={() => handleStatusFilter('active')}
-          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-            status === 'active' 
-              ? 'bg-blue-600 text-white shadow-lg' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${status === 'active'
+            ? 'bg-blue-600 text-white shadow-lg'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
         >
           Active
         </button>
         <button
           onClick={() => handleStatusFilter('pending')}
-          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-            status === 'pending' 
-              ? 'bg-yellow-600 text-white shadow-lg' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${status === 'pending'
+            ? 'bg-yellow-600 text-white shadow-lg'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
         >
           Pending
         </button>
         <button
           onClick={() => handleStatusFilter('sold')}
-          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-            status === 'sold' 
-              ? 'bg-green-600 text-white shadow-lg' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${status === 'sold'
+            ? 'bg-green-600 text-white shadow-lg'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
         >
           Sold
         </button>
         <button
           onClick={() => handleStatusFilter('')}
-          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-            status === '' 
-              ? 'bg-gray-600 text-white shadow-lg' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${status === ''
+            ? 'bg-gray-600 text-white shadow-lg'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
         >
           All Status
         </button>
@@ -338,12 +407,12 @@ const ManageListingsPage = () => {
                         </td>
                         <td className="py-4 px-6">
                           <span className="text-sm font-bold text-gray-900">
-                            {formatPrice(listing.price.amount, listing.price.currency )}
+                            {formatPrice(listing.price.amount, listing.price.currency)}
                           </span>
                         </td>
                         <td className="py-4 px-6">
                           <span className="text-sm text-gray-700 capitalize">
-                     {listing.propertyType?.subType?.replace(/-/g, ' ') || 'N/A'}
+                            {listing.propertyType?.subType?.replace(/-/g, ' ') || 'N/A'}
                           </span>
                         </td>
                         <td className="py-4 px-6">
@@ -364,12 +433,13 @@ const ManageListingsPage = () => {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               className="inline-flex items-center cursor-pointer gap-2 text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-300 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-[50px] text-sm font-semibold transition-all duration-200 group-hover:shadow-sm"
-                              onClick={(e)=>{handelPushToEdit(listing._id)}}
+                              onClick={(e) => { handelPushToEdit(listing._id) }}
                             >
                               <Edit className="w-3 h-3" />
                               Edit
                             </button>
                             <button
+                              onClick={(e) => { handelOpenConfirm("LI-123456", listing._id) }}
                               className="inline-flex items-center cursor-pointer gap-2 text-red-600 hover:text-red-700 border border-red-600 hover:border-red-300 bg-red-50 hover:bg-red-100 px-3 py-1.5  rounded-[50px] text-sm font-semibold transition-all duration-200 group-hover:shadow-sm"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -386,6 +456,54 @@ const ManageListingsPage = () => {
           </>
         )}
       </div>
+
+      {/* Confirm Delete */}
+
+      {confirmOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 animate-fadeIn">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirm Deletion</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              To confirm, please type <strong>{selectedListPublic_id}</strong> below.
+              This action is <span className="text-red-600 font-medium">irreversible</span>.
+            </p>
+
+            <input
+              type="text"
+              value={confirmInput}
+              onChange={(e) => setConfirmInput(e.target.value)}
+              placeholder={`Type "${selectedListPublic_id}" to confirm`}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:outline-none"
+            />
+
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                onClick={handelCloseConfirm}
+                className="px-4 py-2 rounded-[50px] cursor-pointer text-gray-600 border border-gray-300 hover:bg-gray-100 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handelDelete}
+                className={`flex items-center justify-center gap-2 px-6 py-2 rounded-[50px] font-medium text-white transition-all ${confirmInput.trim() === selectedListPublic_id
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-red-300 cursor-not-allowed"
+                  }`}
+                disabled={confirmInput.trim() !== selectedListPublic_id || deleteLoading}
+              >
+                {deleteLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  "Confirm Delete"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
       {listings.length > 0 && (
@@ -416,6 +534,7 @@ const ManageListingsPage = () => {
           />
         </div>
       )}
+      {toast && <CustomToast {...toast} onClose={() => setToast(null)} duration={3000} />}
     </div>
   );
 };

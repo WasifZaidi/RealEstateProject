@@ -1,11 +1,14 @@
 const Meeting = require("../../Model/Meeting");
 const Agent = require("../../Model/Agent");
 const mongoose = require("mongoose");
-
 exports.getAgentMeetings = async (req, res) => {
+  // Add request tracking for debugging
+  const requestId = req.id || Math.random().toString(36).substring(7);
+
   try {
     const userId = req.user?.id;
     if (!userId) {
+      console.warn(`🚫 [${requestId}] Unauthorized access attempt`);
       return res.status(401).json({
         success: false,
         message: "Unauthorized: User not logged in.",
@@ -13,8 +16,9 @@ exports.getAgentMeetings = async (req, res) => {
     }
 
     // 2️⃣ Find the agent associated with this user
-    const agent = await Agent.findOne({ user: userId }).select("agentId");
+    const agent = await Agent.findOne({ user: userId }).select("agentId").lean();
     if (!agent) {
+      console.warn(`🚫 [${requestId}] Agent not found for user: ${userId}`);
       return res.status(404).json({
         success: false,
         message: "Agent profile not found for this user.",
@@ -31,78 +35,177 @@ exports.getAgentMeetings = async (req, res) => {
       endDate,
       lat,
       lng,
-      radius = 10, // km
+      radius = 10,
       page = 1,
       limit = 10,
+      search // Generic search parameter
     } = req.query;
 
-    // ---------- Base Query ----------
+    // ---------- Input Validation & Sanitization ----------
+    const pageNum = Math.max(1, parseInt(page));
+    const pageLimit = Math.min(Math.max(1, parseInt(limit)), 100); // Cap at 100 to prevent abuse
+    const skip = (pageNum - 1) * pageLimit;
+
+    // Validate date formats
+    if (startDate && isNaN(new Date(startDate).getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid start date format",
+      });
+    }
+
+    if (endDate && isNaN(new Date(endDate).getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid end date format",
+      });
+    }
+
+    // ---------- Enhanced Query Building ----------
     const query = { agentId };
 
-    // ✅ Filter by status
-    if (status) query.status = status;
+    // ✅ Filter by status with validation
+    const validStatuses = ['scheduled', 'completed', 'cancelled', 'rescheduled'];
+    if (status && validStatuses.includes(status)) {
+      query.status = status;
+    } else if (status) {
+      console.warn(`⚠️ [${requestId}] Invalid status filter: ${status}`);
+    }
 
-    // ✅ Filter by meetingPublic_Id
-    if (meetingPublic_Id) query.meetingPublic_Id = meetingPublic_Id;
+    // ✅ Enhanced search functionality - search by meetingPublic_Id or generic search
+    if (search) {
+      query.$or = [
+        { meetingPublic_Id: { $regex: search, $options: 'i' } },
+        { 'client.name': { $regex: search, $options: 'i' } },
+        { 'listing.title': { $regex: search, $options: 'i' } }
+      ];
+    } else if (meetingPublic_Id) {
+      // Backward compatibility for direct meetingPublic_Id filter
+      query.meetingPublic_Id = meetingPublic_Id;
+    }
 
     // ✅ Filter by listing_publicId
     if (listing_publicId) query.listing_publicId = listing_publicId;
 
-    // ✅ Filter by meeting type
-    if (type) query.type = type;
-
-    // ✅ Filter by date range
-    if (startDate || endDate) {
-      query.date = {};
-      if (startDate) query.date.$gte = new Date(startDate);
-      if (endDate) query.date.$lte = new Date(endDate);
+    // ✅ Filter by meeting type with validation
+    const validTypes = ['virtual', 'phone', 'in_person'];
+    if (type && validTypes.includes(type)) {
+      query.type = type;
+    } else if (type) {
+      console.warn(`⚠️ [${requestId}] Invalid type filter: ${type}`);
     }
 
-    // ✅ Geo filter (optional)
+    // ✅ Filter by date range with validation
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        query.date.$gte = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.date.$lte = end;
+      }
+    }
+
+    // ✅ Geo filter with validation
     if (lat && lng) {
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lng);
+      const radiusKm = Math.min(parseFloat(radius), 100); // Cap radius at 100km
+
+      if (isNaN(latitude) || isNaN(longitude) || isNaN(radiusKm)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid geo parameters",
+        });
+      }
+
+      if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid latitude or longitude values",
+        });
+      }
+
       query["location.coordinates"] = {
         $geoWithin: {
           $centerSphere: [
-            [parseFloat(lng), parseFloat(lat)],
-            parseFloat(radius) / 6378.1, // convert km → radians
+            [longitude, latitude],
+            radiusKm / 6378.1, // convert km → radians
           ],
         },
       };
     }
 
-    // ---------- Pagination ----------
-    const pageNum = Math.max(1, parseInt(page));
-    const pageLimit = Math.max(1, parseInt(limit));
-    const skip = (pageNum - 1) * pageLimit;
-
-    // ---------- Query DB ----------
+    // ---------- Optimized Database Query ----------
     const [meetings, total] = await Promise.all([
       Meeting.find(query)
-        .populate("client", "name email")
+        .populate("client", "name email phone")
         .populate("agent", "name email")
-        .populate("listing", "title price status")
-        .sort({ date: -1 }) // newest first
+        .populate("listing", "title price status location")
+        .sort({ date: -1, createdAt: -1 }) // multiple sort criteria
         .skip(skip)
         .limit(pageLimit)
-        .lean(),
-      Meeting.countDocuments(query),
+        .lean()
+        .maxTimeMS(30000), // 30 second timeout
+      Meeting.countDocuments(query).maxTimeMS(15000) // 15 second timeout for count
     ]);
 
-    // ---------- Response ----------
+    // ---------- Response Data Sanitization ----------
+    const sanitizedMeetings = meetings.map(meeting => ({
+      ...meeting,
+      // Ensure sensitive data is not exposed
+      client: meeting.client ? {
+        name: meeting.client.name,
+        email: meeting.client.email,
+        phone: meeting.client.phone
+      } : null,
+      agent: meeting.agent ? {
+        name: meeting.agent.name,
+        email: meeting.agent.email
+      } : null
+    }));
+
+    console.log(`✅ [${requestId}] Successfully fetched ${meetings.length} meetings for agent ${agentId}`);
+
+
+    console.log(sanitizedMeetings)
+    // ---------- Response with Cache Headers ----------
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.status(200).json({
       success: true,
       total,
       totalPages: Math.ceil(total / pageLimit),
       currentPage: pageNum,
-      results: meetings.length,
-      meetings,
+      results: sanitizedMeetings.length,
+      meetings: sanitizedMeetings,
     });
+
   } catch (error) {
-    console.error("❌ Error fetching meetings:", error);
+    console.error(`❌ [${requestId}] Error fetching meetings:`, error);
+    
+    // Different error responses based on error type
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid query parameters",
+      });
+    }
+    
+    if (error.name === 'TimeoutError') {
+      return res.status(504).json({
+        success: false,
+        message: "Request timeout",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Server error while fetching meetings",
-      error: error.message,
+      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
     });
   }
 };

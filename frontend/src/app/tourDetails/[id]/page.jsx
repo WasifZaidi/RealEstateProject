@@ -138,6 +138,10 @@ const MeetingDetailsPage = () => {
     alert('Meeting link copied to clipboard!');
   };
 
+  const handleReschedule = () => {
+    router.push(`/meeting/reschedule/${meeting.agentId}/${meeting.meetingPublic_Id}`)
+  }
+
   // Cancel Meeting Modal Component
   const CancelMeetingModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
@@ -326,23 +330,23 @@ const MeetingDetailsPage = () => {
                   </div>
                 </div>
 
-               {meeting.location?.coordinates?.coordinates && (
-  <button
-    onClick={() => {
-  const [lng, lat] = meeting.location.coordinates.coordinates;
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const mapsUrl = isIOS
-    ? `http://maps.apple.com/?ll=${lat},${lng}`
-    : `https://www.google.com/maps?q=${lat},${lng}`;
-  window.open(mapsUrl, "_blank", "noopener,noreferrer");
-}}
+                {meeting.location?.coordinates?.coordinates && (
+                  <button
+                    onClick={() => {
+                      const [lng, lat] = meeting.location.coordinates.coordinates;
+                      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                      const mapsUrl = isIOS
+                        ? `http://maps.apple.com/?ll=${lat},${lng}`
+                        : `https://www.google.com/maps?q=${lat},${lng}`;
+                      window.open(mapsUrl, "_blank", "noopener,noreferrer");
+                    }}
 
-    className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
-  >
-    <Navigation className="h-4 w-4" />
-    <span className="text-sm font-medium">Open in Maps</span>
-  </button>
-)}
+                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    <Navigation className="h-4 w-4" />
+                    <span className="text-sm font-medium">Open in Maps</span>
+                  </button>
+                )}
 
               </div>
             </div>
@@ -435,27 +439,48 @@ const MeetingDetailsPage = () => {
             <div className="bg-white rounded-xl shadow-sm border p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-3">
+                {/* Call Agent */}
                 {meeting?.agentContacts?.phone && (
                   <a
                     href={`tel:${meeting.agentContacts.phone}`}
-                    className="w-full flex items-center justify-center space-x-2 bg-gray-100 text-gray-700 py-3 px-4 rounded-[50px] hover:bg-gray-200 transition-colors duration-200"
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-[50px] font-medium
+             bg-blue-600 text-white border border-blue-700 shadow-sm
+             hover:bg-blue-700 hover:border-blue-800 hover:shadow-md 
+             active:scale-[0.98] transition-all duration-300"
                   >
                     <Phone className="h-5 w-5" />
-                    <span className="font-medium">Call Agent</span>
+                    <span>Call Agent</span>
                   </a>
+
                 )}
 
+                {/* Reschedule Tour */}
+                {meeting.status === "Scheduled" && (
+                  <button
+                    onClick={handleReschedule}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-[50px] font-medium
+                 bg-white text-amber-600 border border-amber-400 shadow-sm
+                 hover:bg-amber-50 hover:shadow-md transition-all duration-200"
+                  >
+                    <Clock className="h-5 w-5" />
+                    <span>Reschedule Tour</span>
+                  </button>
+                )}
 
-                {meeting.status === 'Scheduled' && (
+                {/* Cancel Tour */}
+                {meeting.status === "Scheduled" && (
                   <button
                     onClick={openCancelModal}
-                    className="w-full flex items-center justify-center space-x-2 bg-red-600 text-white py-3 px-4 rounded-[50px] hover:bg-red-700 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-[50px] font-medium
+                 bg-white text-red-600 border border-red-400 shadow-sm
+                 hover:bg-red-50 hover:shadow-md transition-all duration-200"
                   >
                     <Trash2 className="h-5 w-5" />
                     <span>Cancel Tour</span>
                   </button>
                 )}
               </div>
+
             </div>
 
             {/* Meeting Information */}

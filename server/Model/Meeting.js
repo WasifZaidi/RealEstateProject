@@ -43,9 +43,6 @@ const meetingSchema = new mongoose.Schema(
       required: true,
     },
 
-
-
-
     agentId: {
       type: String,
       required: true,
@@ -74,7 +71,7 @@ const meetingSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Scheduled", "Completed", "Cancelled", "Cancelled By User"],
+      enum: ["Scheduled", "Completed", "Cancelled"],
       default: "Scheduled",
     },
 
@@ -105,6 +102,20 @@ const meetingSchema = new mongoose.Schema(
 
     meetingPublic_Id: { type: String, required: true },
 
+    rescheduleHistory: [
+      {
+        oldDate: Date,
+        newDate: Date,
+        reason: String,
+        rescheduledBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
+    rescheduleCount: { type: Number, default: 0 },
+
     cancelledAt: {
       type: Date,
       default: null,
@@ -115,6 +126,7 @@ const meetingSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+
   },
   { timestamps: true }
 );

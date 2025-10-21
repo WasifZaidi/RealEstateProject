@@ -69,6 +69,9 @@ app.use('/api', wishlistRoutes)
 const meetingRoutes = require("./Routes/MettingRoute")
 app.use('/api/meeting', meetingRoutes)
 // Dashboard Routes
+// Analytics
+const analyticsRoutes = require("./Routes/Dashboard/analyticsRoute")
+app.use('/api/dashboard', analyticsRoutes)
 const accessorRoutes = require("./Routes/Dashboard/accessorRoute")
 app.use("/api/dashboard", accessorRoutes );
 
