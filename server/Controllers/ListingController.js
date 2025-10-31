@@ -717,3 +717,21 @@ exports.getAgentListings = async (req, res) => {
   }
 };
 
+exports.deleteAllListings = async (req, res) => {
+  try {
+    const result = await Listing.deleteMany({}); // deletes all documents
+
+    res.status(200).json({
+      success: true,
+      message: 'All listings have been deleted successfully.',
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Error deleting listings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred while deleting listings.',
+      error: error.message
+    });
+  }
+};

@@ -2,6 +2,7 @@ import React from 'react'
 import Image from 'next/image'
 import { figtree, inter, outfit, ProximaNovaSemiBold } from '@/utils/fonts'
 import DoneSvg from '../svg/DoneSvg';
+import { Award } from 'lucide-react';
 const About = () => {
     return (
         <div className="about_box margin_top_reg  flex items-start max-w-[1500px] w-[95%] mx-auto max-[1024px]:flex-col max-[1024px]:gap-[100px] max-[500px]:gap-[30px]">
@@ -34,12 +35,16 @@ const About = () => {
                 </div>
             </div>
             <div className="basis-[55%] about_right max-[500px]:w-[90%] max-[500px]:mx-auto">
-                <div className="flex flex-col gap-[10px]">
-                    <h2 className={`text-[22px] leading-[20px] text-[#1D4ED8] font-[900] tracking-tight`}>
-                        Who we are
-                    </h2>
-                    <h2 className={`text-[40px] about_right_head leading-[45px] ${outfit.className} font-[600] max-[500px]:text-[30px] max-[500px]:leading-[35px] font-[600] text-[#434343]`}>
-                        We are a family-owned empiral agency
+                <div className="flex flex-col gap-6">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-200 w-fit">
+                        <Award className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-700">Who We Are</span>
+                    </div>
+                    <h2 className={`${outfit.className} text-4xl lg:text-5xl font-bold text-gray-900 leading-tight`}>
+                        We Are A Family-Owned{' '}
+                        <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                            Empire Agency
+                        </span>
                     </h2>
                 </div>
                 <div className="flex mt-[20px] flex-col gap-[20px]">

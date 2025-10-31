@@ -1,8 +1,8 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-// ✅ Reuse your location schema
-const locationSchema = new mongoose.Schema({
+// ✅ Reusable location sub-schema
+const locationSchema = new Schema({
   state: {
     type: String,
     required: true,
@@ -21,16 +21,32 @@ const locationSchema = new mongoose.Schema({
     },
     coordinates: {
       type: [Number], // [longitude, latitude]
+      required: true,
       index: "2dsphere",
     },
   },
-  zipCode: String,
-  neighborhood: String,
+  zipCode: {
+    type: String,
+    trim: true,
+  },
+  neighborhood: {
+    type: String,
+    trim: true,
+  },
 });
 
-// ✅ Main Meeting schema
-const meetingSchema = new mongoose.Schema(
+// ✅ Main Meeting Schema
+const meetingSchema = new Schema(
   {
+    // Public meeting identifier
+    meetingPublic_Id: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+
+    // Linked entities
     client: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -52,15 +68,19 @@ const meetingSchema = new mongoose.Schema(
     listing: {
       type: Schema.Types.ObjectId,
       ref: "Listing",
+      required: true,
     },
 
     listing_publicId: {
-      type: String, required: true
+      type: String,
+      required: true,
+      trim: true,
     },
 
+    // Meeting details
     type: {
       type: String,
-      enum: ["Tour", "Meeting"],
+      enum: ["Tour", "Meeting", "Consultation", "Follow-up"],
       required: true,
     },
 
@@ -75,47 +95,60 @@ const meetingSchema = new mongoose.Schema(
       default: "Scheduled",
     },
 
+    meetingMode: {
+      type: String,
+      enum: ["In-Person", "Video", "Call"],
+      default: "In-Person",
+      required: true,
+    },
+
     notes: {
       type: String,
       trim: true,
     },
 
-    location: locationSchema,
+    // Embedded sub-documents
+    location: {
+      type: locationSchema,
+      required: true,
+    },
 
     agentContacts: {
-      firstName: { type: String, required: true },
-      lastName: { type: String, required: true },
-      phone: { type: String, required: true },
-      email: { type: String, required: true },
+      firstName: { type: String, required: true, trim: true },
+      lastName: { type: String, required: true, trim: true },
+      phone: { type: String, required: true, trim: true },
+      email: { type: String, required: true, trim: true },
     },
 
     clientContacts: {
-      name: { type: String, required: true },
-      phone: { type: String, required: true },
-      email: { type: String, required: true },
+      name: { type: String, required: true, trim: true },
+      phone: { type: String, required: true, trim: true },
+      email: { type: String, required: true, trim: true },
     },
 
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
+      required: true,
     },
 
-    meetingPublic_Id: { type: String, required: true },
-
+    // Rescheduling history
     rescheduleHistory: [
       {
-        oldDate: Date,
-        newDate: Date,
-        reason: String,
+        oldDate: { type: Date, required: true },
+        newDate: { type: Date, required: true },
+        reason: { type: String, trim: true },
         rescheduledBy: {
-          type: mongoose.Schema.Types.ObjectId,
+          type: Schema.Types.ObjectId,
           ref: "User",
         },
         timestamp: { type: Date, default: Date.now },
       },
     ],
+
     rescheduleCount: { type: Number, default: 0 },
 
+    // Cancellation info
     cancelledAt: {
       type: Date,
       default: null,
@@ -126,12 +159,14 @@ const meetingSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
-
   },
   { timestamps: true }
 );
 
-meetingSchema.index({ meetingPublic_Id: 1 });
+// ✅ Indexes for performance
+meetingSchema.index({ meetingPublic_Id: 1 }, { unique: true });
+meetingSchema.index({ createdAt: -1 });
+meetingSchema.index({ "location.coordinates": "2dsphere" });
 
-module.exports = mongoose.model('Meeting', meetingSchema);
-
+// ✅ Export Model
+module.exports = mongoose.model("Meeting", meetingSchema);
