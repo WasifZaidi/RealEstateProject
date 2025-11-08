@@ -735,3 +735,39 @@ exports.deleteAllListings = async (req, res) => {
     });
   }
 };
+
+exports.getHomePageListings = async (req, res) => {
+  try {
+    // Fetch top 4 newest featured listings
+    const listings = await Listing.find({ isFeatured: true, status: "active" })
+      .sort({ createdAt: -1 }) 
+      .limit(4)
+      .select("title description price location media propertyType status isFeatured listedAt") // select only relevant fields for homepage
+      .lean(); 
+
+    // Handle case when no listings found
+    if (!listings || listings.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No featured listings available at the moment.",
+        listings: []
+      });
+    }
+
+    console.log(listings)
+
+    // Respond with data
+    return res.status(200).json({
+      success: true,
+      count: listings.length,
+      listings
+    });
+  } catch (error) {
+    console.error("Error fetching featured listings:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while fetching homepage listings."
+    });
+  }
+};

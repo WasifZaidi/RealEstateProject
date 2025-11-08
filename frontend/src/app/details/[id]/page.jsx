@@ -224,10 +224,10 @@ function ContactCard({ id, agentId, isScheduledTour, agent, contactInfo, title, 
       </div>
 
    <div className="space-y-4">
-  <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-[50px] font-semibold transition-colors duration-200 flex items-center justify-center">
+  <Link href={`/contact/${agentId}`} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-[50px] font-semibold transition-colors duration-200 flex items-center justify-center">
     <PhoneIcon className="w-5 h-5 mr-2" />
     Contact Agent
-  </button>
+  </Link>
 
   <button className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 px-4 rounded-[50px] font-semibold transition-colors duration-200 flex items-center justify-center">
     <EnvelopeIcon className="w-5 h-5 mr-2" />
@@ -415,6 +415,7 @@ export default async function ListingPage({ params }) {
           <div className="lg:col-span-1">
             <ContactCard
               agent={listing.agent}
+              agentId={listing.agentId}
               isScheduledTour={listing.isScheduledTour}
               contactInfo={listing.contactInfo}
               title={listing.title}

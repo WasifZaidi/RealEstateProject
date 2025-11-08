@@ -68,7 +68,7 @@ const createListingSchema = Joi.object({
   // Location
   location: locationSchema.required(),
 
-  propertyFor: Joi.string().valid('Sell', 'Rent').required().messages({
+  propertyFor: Joi.string().valid('Sell', 'Rent', "Lease").required().messages({
     'any.only': 'Property for must be either Sell or Rent'
   }),
 

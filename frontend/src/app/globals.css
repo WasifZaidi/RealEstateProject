@@ -92,57 +92,101 @@ svg {
 
 
 
+/* Base input styling with smooth transitions */
 .normal_input {
     width: 100%;
-    padding: 12px 16px;
-    font-size: 14px;
-    border: 1px solid #dbdbdb;
+    padding: 14px 18px;
+    font-size: 15px;
+    line-height: 1.5;
+    border: 1.5px solid #e2e8f0; 
     border-radius: 12px;
     background: #ffffff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s ease-in;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04); 
     outline: none;
-    color: #2d3748;
+    color: #1a202c;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: inherit;
 }
-.normal_input.pl_9{
-  padding-left: 2.25rem;
+
+/* Padding variations with consistent naming */
+.normal_input.pl_small {
+    padding-left: 2.25rem; /* 36px */
 }
-.normal_input.pl_2{
-  padding-left: 3rem;
+
+.normal_input.pl_medium {
+    padding-left: 3rem; /* 48px */
 }
-/* Focus state */
+
+.normal_input.pl_large {
+    padding-left: 3.75rem; /* 60px */
+}
+
+/* Hover state for better interactivity */
+.normal_input:hover:not(:focus):not(.normal_err):not(:disabled) {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* Enhanced focus state with smooth ring animation */
 .normal_input:focus {
-    border-color: #2563eb;
-    background: #f8faff;
+    border-color: #3b82f6;
+    background: #fafbff;
     box-shadow: 
-        0 0 0 1px #2563eb,
-        0 4px 12px rgba(37, 99, 235, 0.2),
-        0 0 0 4px rgba(37, 99, 235, 0.1),
-        inset 0 1px 2px rgba(37, 99, 235, 0.05);
+        0 0 0 3px rgba(59, 130, 246, 0.12),
+        0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
-/* Placeholder styling */
 .normal_input::placeholder {
-    color: #a0aec0;
+    color: #94a3b8;
     opacity: 1;
+    transition: opacity 0.2s ease;
 }
 
-/* Error state */
+.normal_input:focus::placeholder {
+    opacity: 0.6;
+}
+
 .normal_input.normal_err {
-    border-color: #ef4444;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2),
-                0 0 0 3px rgba(239, 68, 68, 0.1);
+    border-color: #f87171;
+    background: #fef2f2;
+    box-shadow: 
+        0 0 0 3px rgba(248, 113, 113, 0.1),
+        0 2px 6px rgba(239, 68, 68, 0.15);
 }
 
 /* Error state focus */
 .normal_input.normal_err:focus {
-    border-color: #dc2626;
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25),
-                0 0 0 3px rgba(220, 38, 38, 0.15);
+    border-color: #ef4444;
+    background: #fef2f2;
+    box-shadow: 
+        0 0 0 3px rgba(239, 68, 68, 0.15),
+        0 2px 8px rgba(239, 68, 68, 0.2);
 }
 
-.normal_input.mod_1{
-  padding-left: 30px;
+/* Disabled state */
+.normal_input:disabled {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.normal_input:disabled::placeholder {
+    color: #cbd5e1;
+}
+
+/* Size variations */
+.normal_input.size_small {
+    padding: 10px 14px;
+    font-size: 14px;
+    border-radius: 10px;
+}
+
+.normal_input.size_large {
+    padding: 16px 20px;
+    font-size: 16px;
+    border-radius: 14px;
 }
 
 @keyframes spin-smooth {
@@ -157,3 +201,8 @@ svg {
 
 
 
+@media screen and (max-width: 450px) {
+  .range-grid-modal {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

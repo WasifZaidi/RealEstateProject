@@ -57,6 +57,8 @@ router.get(
   ListingController.getListingByFilter
 );
 
+router.get("/results/homepage", ListingController.getHomePageListings)
+
 router.delete("/delete", ListingController.deleteAllListings)
 
 module.exports = router;

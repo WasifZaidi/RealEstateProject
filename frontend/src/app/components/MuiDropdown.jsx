@@ -14,8 +14,8 @@ const MuiDropdown = ({
     optionType = "auto",
     locked = false,
     info = null,
-    searchable = true, // ✅ New prop to enable/disable search
-    minHeight = "300px", // ✅ New prop for minimum height
+    searchable = false,
+    minHeight = "300px",
 }) => {
     const [showInfo, setShowInfo] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -43,6 +43,13 @@ const MuiDropdown = ({
                 label: opt.label ?? opt.value,
             }));
     }, [options, optionType]);
+
+    // Get selected label for display
+    const selectedLabel = useMemo(() => {
+        if (!value) return placeholder;
+        const selectedOption = normalizedOptions.find(opt => opt.value === value);
+        return selectedOption?.label || placeholder;
+    }, [value, normalizedOptions, placeholder]);
 
     // Filter options based on search term
     const filteredOptions = useMemo(() => {
@@ -91,19 +98,22 @@ const MuiDropdown = ({
         setSearchTerm("");
     };
 
-    // Custom dropdown icon
-    const CustomDropdownIcon = (props) => (
-        <ChevronDown 
-            className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${props.className || ''}`}
-        />
-    );
+    const handleKeyDown = (event) => {
+        if (event.key === 'Escape') {
+            setIsOpen(false);
+        }
+    };
+
 
     return (
         <div className="sort_box flex flex-col gap-2 w-full">
             {title && (
-                <span className={`btes ${inter.className} fw_500 block w-full text-sm font-semibold text-gray-700`}>
+                <label 
+                    htmlFor="mui-dropdown" 
+                    className={`btes ${inter.className} fw_500 block w-full text-sm font-semibold text-gray-700`}
+                >
                     {title}
-                </span>
+                </label>
             )}
             
             <FormControl sx={{ minWidth: "100%", width: "100%" }}>
@@ -115,6 +125,7 @@ const MuiDropdown = ({
                         style={{
                             fontFamily: inter.style.fontFamily,
                         }}
+                        aria-label={selectedLabel}
                     >
                         <span>{selectedLabel}</span>
                         <Info className="w-4 h-4 text-gray-500" />
@@ -122,6 +133,7 @@ const MuiDropdown = ({
                 ) : (
                     // ✅ Enhanced Dropdown with Search
                     <Select
+                        id="mui-dropdown"
                         value={value ?? defaultValue}
                         onChange={(e) => onChange?.(e.target.value)}
                         onOpen={() => setIsOpen(true)}
@@ -129,7 +141,7 @@ const MuiDropdown = ({
                         open={isOpen}
                         size="small"
                         displayEmpty
-                        IconComponent={CustomDropdownIcon}
+                        onKeyDown={handleKeyDown}
                         sx={{
                             borderRadius: "12px",
                             fontFamily: inter.style.fontFamily,
@@ -139,7 +151,7 @@ const MuiDropdown = ({
                             transition: "all 0.2s ease-in-out",
                             "& .MuiOutlinedInput-notchedOutline": {
                                 border: "2px solid #e5e7eb",
-                                borderRadius: "12px",
+                                borderRadius: "0px",
                                 transition: "all 0.2s ease-in-out",
                             },
                             "&:hover .MuiOutlinedInput-notchedOutline": {
@@ -165,8 +177,8 @@ const MuiDropdown = ({
                                     mt: "8px",
                                     boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
                                     border: "1px solid #e5e7eb",
-                                    minHeight: minHeight, // ✅ Apply minimum height
-                                    maxHeight: "400px", // ✅ Maximum height for very long lists
+                                    minHeight: minHeight,
+                                    maxHeight: "400px",
                                 },
                             },
                             MenuListProps: {
@@ -174,6 +186,8 @@ const MuiDropdown = ({
                                     padding: 0,
                                 },
                             },
+                            disableAutoFocus: true,
+                            disableEnforceFocus: true,
                         }}
                         renderValue={(selected) => {
                             if (!selected) {
@@ -216,8 +230,10 @@ const MuiDropdown = ({
                                         endAdornment: searchTerm && (
                                             <InputAdornment position="end">
                                                 <button
+                                                    type="button"
                                                     onClick={clearSearch}
                                                     className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                                                    aria-label="Clear search"
                                                 >
                                                     <X className="w-3 h-3 text-gray-400" />
                                                 </button>
@@ -254,52 +270,62 @@ const MuiDropdown = ({
                             </Box>
                         )}
 
-                        {/* ✅ Placeholder for empty search */}
-                        {searchTerm && filteredOptions.length === 0 && (
+                        {/* ✅ Options List */}
+                        {filteredOptions.length > 0 ? (
+                            filteredOptions.map((option, i) => (
+                                <MenuItem
+                                    key={`${option.value}-${i}`}
+                                    value={option.value}
+                                    onClick={() => handleMenuItemClick(option.value)}
+                                    sx={{
+                                        fontFamily: inter.style.fontFamily,
+                                        fontSize: "14px",
+                                        padding: "12px 16px",
+                                        borderBottom: "1px solid #f8fafc",
+                                        "&:last-child": {
+                                            borderBottom: "none",
+                                        },
+                                        "&:hover": {
+                                            backgroundColor: "#f0f9ff",
+                                        },
+                                        "&.Mui-selected": {
+                                            backgroundColor: "#dbeafe",
+                                            "&:hover": {
+                                                backgroundColor: "#bfdbfe",
+                                            },
+                                        },
+                                    }}
+                                >
+                                    {option.label}
+                                </MenuItem>
+                            ))
+                        ) : (
+                            // ✅ No results message
                             <MenuItem disabled sx={{ fontFamily: inter.style.fontFamily }}>
                                 <div className="text-center py-4 text-gray-500 w-full">
                                     <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                                    <div>No results found for "{searchTerm}"</div>
-                                    <div className="text-xs mt-1">Try different keywords</div>
+                                    <div>
+                                        {searchTerm 
+                                            ? `No results found for "${searchTerm}"`
+                                            : "No options available"
+                                        }
+                                    </div>
+                                    {searchTerm && (
+                                        <div className="text-xs mt-1">Try different keywords</div>
+                                    )}
                                 </div>
                             </MenuItem>
                         )}
-
-                        {/* ✅ Options List */}
-                        {filteredOptions.map((option, i) => (
-                            <MenuItem
-                                key={i}
-                                value={option.value}
-                                onClick={() => handleMenuItemClick(option.value)}
-                                sx={{
-                                    fontFamily: inter.style.fontFamily,
-                                    fontSize: "14px",
-                                    padding: "12px 16px",
-                                    borderBottom: "1px solid #f8fafc",
-                                    "&:last-child": {
-                                        borderBottom: "none",
-                                    },
-                                    "&:hover": {
-                                        backgroundColor: "#f0f9ff",
-                                    },
-                                    "&.Mui-selected": {
-                                        backgroundColor: "#dbeafe",
-                                        "&:hover": {
-                                            backgroundColor: "#bfdbfe",
-                                        },
-                                    },
-                                }}
-                            >
-                                {option.label}
-                            </MenuItem>
-                        ))}
                     </Select>
                 )}
             </FormControl>
 
-            {/* ✅ Enhanced Info Message */}
             {showInfo && info && (
-                <div className="mt-1 text-xs px-3 py-2 font-medium rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-2 animate-in fade-in duration-200">
+                <div 
+                    className="mt-1 text-xs px-3 py-2 font-medium rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-2 animate-in fade-in duration-200"
+                    role="alert"
+                    aria-live="polite"
+                >
                     <Info className="w-3 h-3" />
                     {typeof info === "string"
                         ? info

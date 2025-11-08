@@ -1,106 +1,124 @@
-"use client"
-import React, { useState } from 'react';
+"use client";
+
+import React, { useState, useEffect } from "react";
 import {
     Phone,
     MessageCircle,
     Mail,
-    MapPin,
     Clock,
-    Building2,
-    Users,
-    Globe,
-    MessageSquare,
     Send,
     CheckCircle,
     ArrowRight,
-    Star,
-    Zap,
-    Shield
-} from 'lucide-react';
+} from "lucide-react";
+import { useParams } from "next/navigation";
 
 const ContactAgentPage = () => {
+    const { id: agentId } = useParams(); // ✅ Correct param name based on /contact/[id]
     const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        company: '',
-        subject: '',
-        message: ''
+        name: "",
+        email: "",
+        company: "",
+        subject: "",
+        message: "",
     });
+    const [contactInfo, setContactInfo] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
 
+    // ✅ Fetch agent contact info
+    useEffect(() => {
+        const fetchAgentContact = async () => {
+            try {
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/agent/contact/${agentId}`,
+                    { cache: "no-store" }
+                );
+
+                if (!res.ok) throw new Error("Failed to fetch agent contact info");
+                const data = await res.json();
+                setContactInfo(data.contact);
+            } catch (err) {
+                console.error("❌ Error fetching contact info:", err);
+                setError("Failed to load contact information");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (agentId) fetchAgentContact();
+    }, [agentId]);
+
     const handleInputChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Simulate form submission
-        console.log('Form submitted:', formData);
+        console.log("Form submitted:", formData);
         setIsSubmitted(true);
-        setTimeout(() => setIsSubmitted(false), 5000);
+        setTimeout(() => setIsSubmitted(false), 4000);
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-gray-600 text-lg animate-pulse">
+                    Loading agent contact info...
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !contactInfo) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <p className="text-red-500 font-medium mb-2">{error}</p>
+                    <p className="text-gray-600">Please try again later.</p>
+                </div>
+            </div>
+        );
+    }
+
+    // ✅ Use dynamic info from API
+    const { phone, email, socialLinks, firstName, lastName, company } =
+        contactInfo;
+
 
     const contactMethods = [
         {
             icon: <Phone className="w-6 h-6" />,
-            title: "Call Now",
-            description: "Speak directly with our team",
-            details: "+1 (555) 123-4567",
-            link: "tel:+15551234567",
+            title: "Call Agent",
+            description: `Speak directly with ${firstName}`,
+            details: phone || "Not available",
+            link: phone ? `tel:${phone}` : null, // Phone still uses tel:
             color: "bg-blue-50 border-blue-200",
             iconColor: "text-blue-600",
             buttonColor: "bg-blue-600 hover:bg-blue-700",
-            badge: "Fastest Response",
-            priority: true
-        },
-        {
-            icon: <MessageCircle className="w-6 h-6" />,
-            title: "WhatsApp",
-            description: "Instant messaging support",
-            details: "+1 (555) 123-4567",
-            link: "https://wa.me/15551234567",
-            color: "bg-green-50 border-green-200",
-            iconColor: "text-green-600",
-            buttonColor: "bg-green-600 hover:bg-green-700",
-            badge: "24/7 Available",
-            priority: true
+            buttonText: "Call Now",
+            badge: "Direct Line",
+            priority: true,
         },
         {
             icon: <Mail className="w-6 h-6" />,
-            title: "Email Us",
-            description: "Send us a detailed message",
-            details: "contact@enterprise.com",
-            link: "mailto:contact@enterprise.com",
+            title: "Email Agent",
+            description: "Send a professional inquiry",
+            details: email || "Not available",
+            // Open Gmail always
+            link: email
+                ? `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(email)}`
+                : null,
             color: "bg-red-50 border-red-200",
             iconColor: "text-red-600",
             buttonColor: "bg-red-600 hover:bg-red-700",
-            badge: "Detailed Support",
-            priority: true
+                 buttonText: "Send Email",
+            badge: "Best for Details",
+            priority: true,
         },
-        {
-            icon: <MessageSquare className="w-6 h-6" />,
-            title: "Live Chat",
-            description: "Real-time support",
-            details: "Start chatting now",
-            link: "#chat",
-            color: "bg-purple-50 border-purple-200",
-            iconColor: "text-purple-600",
-            buttonColor: "bg-purple-600 hover:bg-purple-700",
-            badge: "Instant Connect"
-        }
     ];
 
-    const stats = [
-        { value: "< 2 min", label: "Average Response Time" },
-        { value: "24/7", label: "Support Availability" },
-        { value: "98%", label: "Customer Satisfaction" },
-        { value: "150+", label: "Expert Agents" }
-    ];
-
-    const priorityMethods = contactMethods.filter(method => method.priority);
+    const priorityMethods = contactMethods.filter((m) => m.priority);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -108,16 +126,26 @@ const ContactAgentPage = () => {
             <div className="max-w-7xl mx-auto">
                 {/* Priority Quick Connect Section - Now at the top */}
                 <div className="mb-16">
-                    <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-3">
-                            ⚡ Quick Connect
+                    <div className="text-center mb-10">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 mb-4">
+                            <MessageCircle className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm font-medium text-blue-700">Get in Touch</span>
+                        </div>
+
+
+                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                            <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                                Quick Connect
+                            </span>
                         </h2>
-                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+
+                        <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
                             Choose your preferred method for immediate assistance
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         {priorityMethods.map((method, index) => (
                             <div
                                 key={index}
@@ -126,9 +154,7 @@ const ContactAgentPage = () => {
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center">
                                         <div className={`p-3 rounded-xl ${method.color} mr-4`}>
-                                            <div className={method.iconColor}>
-                                                {method.icon}
-                                            </div>
+                                            <div className={method.iconColor}>{method.icon}</div>
                                         </div>
                                         <div>
                                             <h3 className="font-bold text-lg text-gray-900">{method.title}</h3>
@@ -142,17 +168,38 @@ const ContactAgentPage = () => {
                                 <p className="text-gray-600 text-sm mb-2">{method.description}</p>
                                 <p className="text-xl font-bold text-gray-900 mb-4">{method.details}</p>
 
-                                <a
-                                    href={method.link}
-                                    className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-[50px] text-white font-bold transition-all duration-200 hover:shadow-lg ${method.buttonColor}`}
-                                >
-                                    Connect Now
-                                    <ArrowRight className="w-4 h-4 ml-2" />
-                                </a>
+                                {method.link ? (
+                                    method.link.startsWith("tel:") ? (
+                                        // Phone: use onClick to avoid opening new tab
+                                        <button
+                                            onClick={() => (window.location.href = method.link)}
+                                            className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-[50px] text-white font-bold transition-all duration-200 hover:shadow-lg ${method.buttonColor}`}
+                                        >
+                                           {method.buttonText} <ArrowRight className="w-4 h-4 ml-2" />
+                                        </button>
+                                    ) : (
+                                        // Gmail: open in new tab
+                                        <a
+                                            href={method.link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-[50px] text-white font-bold transition-all duration-200 hover:shadow-lg ${method.buttonColor}`}
+                                        >
+                                           {method.buttonText}  <ArrowRight className="w-4 h-4 ml-2" />
+                                        </a>
+                                    )
+                                ) : (
+                                    <button
+                                        disabled
+                                        className="w-full inline-flex items-center justify-center px-6 py-3 rounded-[50px] bg-gray-300 text-gray-600 font-bold cursor-not-allowed"
+                                    >
+                                        Not Available
+                                    </button>
+                                )}
                             </div>
                         ))}
-                    </div>
 
+                    </div>
                     {/* Emergency Contact Banner */}
                     <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-3xl p-6 text-white">
                         <div className="flex items-center justify-between mb-4">
@@ -208,7 +255,7 @@ const ContactAgentPage = () => {
 
                     {/* Quick Message Form */}
                     <div className="lg:col-span-2">
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                        <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 p-6 hover:shadow-2xl hover:border-blue-200 transition-all duration-300">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="p-2 bg-blue-100 rounded-lg">
                                     <Send className="w-6 h-6 text-blue-600" />
@@ -232,92 +279,94 @@ const ContactAgentPage = () => {
                                     </button>
                                 </div>
                             ) : (
-                             <form onSubmit={handleSubmit} className="space-y-6">
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div>
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
-        Full Name *
-      </label>
-      <input
-        type="text"
-        name="name"
-        required
-        value={formData.name}
-        onChange={handleInputChange}
-        className="w-full px-4 py-3 border border-gray-300 rounded-xl transition-all duration-300 focus:shadow-lg focus:shadow-blue-500/25 focus:border-blue-500 focus:ring-0 outline-none"
-        placeholder="Enter your full name"
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
-        Company *
-      </label>
-      <input
-        type="text"
-        name="company"
-        required
-        value={formData.company}
-        onChange={handleInputChange}
-        className="w-full px-4 py-3 border border-gray-300 rounded-xl transition-all duration-300 focus:shadow-lg focus:shadow-blue-500/25 focus:border-blue-500 focus:ring-0 outline-none"
-        placeholder="Your company name"
-      />
-    </div>
-  </div>
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Full Name *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                required
+                                                value={formData.name}
+                                                onChange={handleInputChange}
+                                                className="normal_input"
+                                                placeholder="Enter your full name"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Company *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="company"
+                                                required
+                                                value={formData.company}
+                                                onChange={handleInputChange}
+                                                className="normal_input"
+                                                placeholder="Your company name"
+                                            />
+                                        </div>
+                                    </div>
 
-  <div>
-    <label className="block text-sm font-semibold text-gray-700 mb-2">
-      Email Address *
-    </label>
-    <input
-      type="email"
-      name="email"
-      required
-      value={formData.email}
-      onChange={handleInputChange}
-      className="w-full px-4 py-3 border border-gray-300 rounded-xl transition-all duration-300 focus:shadow-lg focus:shadow-blue-500/25 focus:border-blue-500 focus:ring-0 outline-none"
-      placeholder="your.email@company.com"
-    />
-  </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Email Address *
+                                            </label>
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                required
+                                                value={formData.email}
+                                                onChange={handleInputChange}
+                                                className="normal_input"
+                                                placeholder="your.email@company.com"
+                                            />
+                                        </div>
 
-  <div>
-    <label className="block text-sm font-semibold text-gray-700 mb-2">
-      Subject *
-    </label>
-    <input
-      type="text"
-      name="subject"
-      required
-      value={formData.subject}
-      onChange={handleInputChange}
-      className="w-full px-4 py-3 border border-gray-300 rounded-xl transition-all duration-300 focus:shadow-lg focus:shadow-blue-500/25 focus:border-blue-500 focus:ring-0 outline-none"
-      placeholder="What can we help you with?"
-    />
-  </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Subject *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="subject"
+                                                required
+                                                value={formData.subject}
+                                                onChange={handleInputChange}
+                                                className="normal_input"
+                                                placeholder="What can we help you with?"
+                                            />
+                                        </div>
+                                    </div>
 
-  <div>
-    <label className="block text-sm font-semibold text-gray-700 mb-2">
-      Message *
-    </label>
-    <textarea
-      rows={5}
-      name="message"
-      required
-      value={formData.message}
-      onChange={handleInputChange}
-      className="w-full px-4 py-3 border border-gray-300 rounded-xl transition-all duration-300 focus:shadow-lg focus:shadow-blue-500/25 focus:border-blue-500 focus:ring-0 outline-none resize-none"
-      placeholder="Please describe your inquiry in detail..."
-    />
-  </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Message *
+                                        </label>
+                                        <textarea
+                                            rows={5}
+                                            name="message"
+                                            required
+                                            value={formData.message}
+                                            onChange={handleInputChange}
+                                            className="normal_input resize-none"
+                                            placeholder="Please describe your inquiry in detail..."
+                                        />
+                                    </div>
 
-  <button
-    type="submit"
-    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-[50px] font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-  >
-    <Send className="w-5 h-5" />
-    Send Message
-    <ArrowRight className="w-5 h-5" />
-  </button>
-</form>
+                                    <button
+                                        type="submit"
+                                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-[50px] font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                                    >
+                                        <Send className="w-5 h-5" />
+                                        Send Message
+                                        <ArrowRight className="w-5 h-5" />
+                                    </button>
+                                </form>
                             )}
                         </div>
                     </div>
@@ -325,7 +374,7 @@ const ContactAgentPage = () => {
                     {/* Additional Contact Options Sidebar */}
                     <div className="space-y-6">
                         {/* Support Hours */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                        <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 p-6 hover:shadow-2xl hover:border-blue-200 transition-all duration-300 transform hover:scale-[1.02]">
                             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
                                 <Clock className="w-5 h-5 text-blue-600" />
                                 Support Hours
@@ -347,83 +396,55 @@ const ContactAgentPage = () => {
                         </div>
 
                         {/* Additional Contact Methods */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-                            <h3 className="font-bold text-lg mb-4">Other Ways to Connect</h3>
-                            <div className="space-y-4">
-                                {contactMethods.filter(method => !method.priority).map((method, index) => (
-                                    <div key={index} className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-                                        <div className={`p-2 rounded-lg ${method.color} mr-3`}>
-                                            <div className={method.iconColor}>
-                                                {method.icon}
+                        <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 p-6 hover:shadow-2xl hover:border-blue-200 transition-all duration-300 transform hover:scale-[1.02]">
+                            <h3 className="font-bold text-xl mb-6 text-gray-800">Other Ways to Connect</h3>
+                            <div className="space-y-3">
+                                {contactMethods.map((method, index) => {
+                                    const handleClick = () => {
+                                        if (!method.link) return;
+                                        if (method.link.startsWith("tel:")) {
+                                            // Phone: open native dialer
+                                            window.location.href = method.link;
+                                        } else {
+                                            // Email: open Gmail in new tab
+                                            window.open(method.link, "_blank", "noopener,noreferrer");
+                                        }
+                                    };
+
+                                    return (
+                                        <div
+                                            key={index}
+                                            onClick={handleClick}
+                                            className="group relative flex items-center p-4 bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-100 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-white cursor-pointer overflow-hidden"
+                                        >
+                                            {/* Background glow effect */}
+                                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                                            {/* Animated border effect */}
+                                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400 to-blue-400 opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
+
+                                            <div className={`p-3 rounded-xl ${method.color} mr-4 group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
+                                                <div className={`${method.iconColor} group-hover:scale-110 transition-transform duration-300`}>
+                                                    {method.icon}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex-1 z-10">
+                                                <h4 className="font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">
+                                                    {method.title}
+                                                </h4>
+                                                <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
+                                                    {method.details}
+                                                </p>
+                                                <span className="text-xs font-semibold bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 px-2 py-1 rounded-full mt-2 inline-block">
+                                                    {method.badge}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div className="flex-1">
-                                            <h4 className="font-semibold text-gray-900">{method.title}</h4>
-                                            <p className="text-sm text-gray-600">{method.details}</p>
-                                        </div>
-                                        <a href={method.link} className="text-blue-600 hover:text-blue-700 font-semibold">
-                                            Start
-                                        </a>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                                    );
+                                })}
 
-                        {/* Stats Card */}
-                        <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white">
-                            <h3 className="font-bold text-lg mb-4">Our Performance</h3>
-                            <div className="space-y-3">
-                                {stats.map((stat, index) => (
-                                    <div key={index} className="flex justify-between items-center">
-                                        <span className="text-blue-100">{stat.label}</span>
-                                        <span className="font-bold">{stat.value}</span>
-                                    </div>
-                                ))}
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Global Support Section */}
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-                    <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-3">
-                            🌍 Global Enterprise Support
-                        </h2>
-                        <p className="text-gray-600 text-lg">
-                            Comprehensive support solutions for international operations
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="text-center p-6">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <MapPin className="w-8 h-8 text-blue-600" />
-                            </div>
-                            <h3 className="font-bold text-xl mb-3">Global Offices</h3>
-                            <p className="text-gray-600 mb-4">
-                                25+ locations worldwide with local support teams in your timezone.
-                            </p>
-                        </div>
-
-                        <div className="text-center p-6">
-                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Users className="w-8 h-8 text-green-600" />
-                            </div>
-                            <h3 className="font-bold text-xl mb-3">Dedicated Managers</h3>
-                            <p className="text-gray-600 mb-4">
-                                Personalized support from dedicated enterprise account managers.
-                            </p>
-                        </div>
-
-                        <div className="text-center p-6">
-                            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Globe className="w-8 h-8 text-purple-600" />
-                            </div>
-                            <h3 className="font-bold text-xl mb-3">Multi-Lingual</h3>
-                            <p className="text-gray-600 mb-4">
-                                Support available in 12+ languages with cultural understanding.
-                            </p>
                         </div>
                     </div>
                 </div>

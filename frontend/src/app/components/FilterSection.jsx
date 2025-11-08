@@ -81,7 +81,7 @@ const INITIAL_FILTERS = {
   yearBuiltFrom: '', yearBuiltTo: '',
 };
 
-const LOCATION_KEYS = ['state', 'city', 'neighborhood'];
+const LOCATION_KEYS = ['state'];
 const NON_LOCATION_KEYS = Object.keys(INITIAL_FILTERS).filter(key => !LOCATION_KEYS.includes(key));
 
 
@@ -108,13 +108,13 @@ const RangeSelector = ({ label, options, minKey, maxKey, tempFilters, handleTemp
   <div className="space-y-4">
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-3">Minimum {label}</label>
-      <div className="grid grid-cols-6 gap-2">
+      <div className="grid grid-cols-6 gap-2 range-grid-modal">
         {options.map((option) => (
           <button
             key={`min-${option}`}
             onClick={() => handleTempFilterChange(minKey, option === 'Any' ? '' : option.replace('+', ''))}
-            className={`py-3 rounded-xl border-2 transition-all font-medium ${tempFilters[minKey] === (option === 'Any' ? '' : option.replace('+', ''))
-                ? 'border-blue-600 bg-blue-600 text-white shadow-md'
+            className={`py-3   border-2 transition-all font-medium ${tempFilters[minKey] === (option === 'Any' ? '' : option.replace('+', ''))
+                ? 'border-black bg-black text-white shadow-md'
                 : 'border-gray-200 hover:border-gray-300 bg-white'
               }`}
           >
@@ -125,13 +125,13 @@ const RangeSelector = ({ label, options, minKey, maxKey, tempFilters, handleTemp
     </div>
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-3">Maximum {label}</label>
-      <div className="grid grid-cols-6 gap-2">
+      <div className="grid grid-cols-6 gap-2 range-grid-modal">
         {options.map((option) => (
           <button
             key={`max-${option}`}
             onClick={() => handleTempFilterChange(maxKey, option === 'Any' ? '' : option.replace('+', ''))}
-            className={`py-3 rounded-xl border-2 transition-all font-medium ${tempFilters[maxKey] === (option === 'Any' ? '' : option.replace('+', ''))
-                ? 'border-blue-600 bg-blue-600 text-white shadow-md'
+            className={`py-3  border-2 transition-all font-medium ${tempFilters[maxKey] === (option === 'Any' ? '' : option.replace('+', ''))
+                ? 'border-black bg-black text-white shadow-md'
                 : 'border-gray-200 hover:border-gray-300 bg-white'
               }`}
           >
@@ -844,7 +844,7 @@ const FilterSection = ({ onApplyFilters }) => {
               <div className="sticky bottom-0 bg-white p-4 border-t border-gray-200 shadow-xl flex justify-end">
                 <button
                   onClick={handleApplyModalFilters}
-                  className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
+                  className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-[50px] shadow-lg hover:bg-blue-700 transition-colors"
                 >
                   Show Results
                 </button>

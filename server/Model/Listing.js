@@ -196,7 +196,8 @@ const listingSchema = new Schema({
   },
   isFeatured: {
     type: Boolean,
-    default: false
+    default: false,
+    index: true
   },
   isPremium: {
     type: Boolean,

@@ -96,7 +96,7 @@ const WhyUs = () => {
                 {/* Content */}
                 <div className="relative z-10">
                   {/* Icon */}
-                  <div className={`mb-6 p-4 rounded-2xl bg-gradient-to-br ${feature.gradient} w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+                  <div className={`mb-6 p-4 rounded-[50px] bg-gradient-to-br ${feature.gradient} w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
                     <IconComponent className="h-8 w-8 text-white" />
                   </div>
 

@@ -6,27 +6,14 @@ import Image from "next/image";
 import WishlistButton from "./WishlistButton";
 import Pagination from "@mui/material/Pagination";
 import Stack from "@mui/material/Stack";
+import NoListings from "./SideComponents/NoListings";
 
 const ListingsGrid = ({ listings, pagination, searchParams, hasError }) => {
   if (hasError) return null;
 
   if (!listings || listings.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="text-gray-400 text-6xl mb-4">🏠</div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          No properties found
-        </h3>
-        <p className="text-gray-600 mb-6 max-w-md mx-auto">
-          Try adjusting your filters or search criteria to find more properties.
-        </p>
-        <Link
-          href="/results"
-          className="inline-flex px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
-        >
-          Clear All Filters
-        </Link>
-      </div>
+      <NoListings/>
     );
   }
 

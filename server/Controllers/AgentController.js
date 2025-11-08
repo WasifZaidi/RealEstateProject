@@ -103,3 +103,50 @@ exports.getAgentByAgentId = async (req, res) => {
     });
   }
 };
+
+exports.getAgentContactInfo = async (req, res) => {
+  try {
+    const { agentId } = req.params;
+
+    if (!agentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Agent ID is required",
+      });
+    }
+
+    // 🔍 Fetch agent contact info only
+    const agent = await Agent.findOne({ agentId, status: "active" })
+      .select(
+        "agentId profile.firstName profile.lastName profile.phone profile.email profile.socialLinks"
+      )
+      .lean();
+
+    if (!agent) {
+      return res.status(404).json({
+        success: false,
+        message: "Agent not found",
+      });
+    }
+
+    // 🧩 Format for frontend
+    const contactInfo = {
+      id: agent.agentId,
+      name: `${agent.profile.firstName} ${agent.profile.lastName}`,
+      phone: agent.profile.phone,
+      email: agent.profile.email,
+      socialLinks: agent.profile.socialLinks || {},
+    };
+
+    return res.status(200).json({
+      success: true,
+      contact: contactInfo,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching agent contact info:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};

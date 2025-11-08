@@ -4,7 +4,7 @@ import FilterSection from '..//components/FilterSection';
 import ListingsGrid from '../components/ListingGrid';
 import { fetchListings } from '../../lib/api_utils';
 import ResultsSorting from '../components/SideComponents/ResultsSorting';
-
+import { redirect } from "next/navigation";
 // Generate metadata for SEO
 export async function generateMetadata({ searchParams }) {
   const seoTitle = generateSEOTitle(searchParams);
@@ -74,6 +74,9 @@ function generateSEODescription(params) {
 
 // Main page component
 export default async function ResultsPage({ searchParams }) {
+    if (!searchParams?.state || searchParams.state.trim() === "") {
+    redirect("/"); // Next.js SSR-friendly redirect
+  }
   const listingsData = await fetchListings(searchParams)
 
   const {

@@ -13,7 +13,7 @@ export default function RootLayout({ children }) {
         <GoogleOAuthProvider clientId={process.env.GOOGLE_CLIENT_ID}>
             <NavbarServerWrapper />
             <main>{children}</main>
-            <Footer />
+            <Footer  />
         </GoogleOAuthProvider>
       </body>
     </html>
