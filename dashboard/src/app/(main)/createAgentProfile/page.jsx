@@ -20,6 +20,7 @@ import {
   Linkedin,
   Twitter,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 /* ------------------- Reusable InputField ------------------- */
 const InputField = React.memo(function InputField({
@@ -161,7 +162,7 @@ const CreateAgentPage = () => {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-
+  const router = useRouter();
   /* ------------------- Validation ------------------- */
   const validateField = useCallback((name, value) => {
     const val = (value || "").trim();
@@ -314,6 +315,7 @@ const CreateAgentPage = () => {
       setImage(null);
       setPreview(null);
       setErrors({});
+      router.push("/")
     } catch (err) {
       setToast({ type: "error", message: err.message });
     } finally {

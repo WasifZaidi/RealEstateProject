@@ -414,7 +414,7 @@ const AgentMeetings = () => {
             <div className="max-w-7xl mx-auto">
                 {/* Header Section */}
                 <div className="mb-8">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="flex flex-col gap-y-[22px] mb-8">
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
                                 <div className="p-2 bg-blue-100 rounded-xl">
@@ -426,26 +426,65 @@ const AgentMeetings = () => {
                         </div>
 
                         {/* Search Box */}
-                        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                            <div className="relative flex-1 lg:min-w-96">
+                        <div className="flex flex-col sm:flex-row items-center gap-3 max-w-[500px] w-[100%] lg:w-auto">
+                            <div className="relative flex-1 w-full lg:min-w-96 items-center">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                                 <input
                                     type="text"
                                     placeholder="Search by Meeting ID, Client Name, or Property"
                                     value={filters.search}
                                     onChange={(e) => handleFilterChange('search', e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleSearch();
+                                        }
+                                    }}
+                                    className="normal_input mod_2"
+                                    aria-label="Search by Meeting ID, Client Name, or Property"
                                 />
+
+                                {/* Clear button inside input when search exists */}
+                                {filters.search && (
+                                    <button
+                                        onClick={() => handleFilterChange('search', '')}
+                                        className="
+          absolute right-3 top-1/2 transform -translate-y-1/2
+          text-gray-400 hover:text-gray-600
+          transition-colors duration-200
+          p-1 rounded-full
+          hover:bg-gray-100
+        "
+                                        aria-label="Clear search"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                )}
                             </div>
-                            <button
-                                onClick={handleSearch}
-                                disabled={loading}
-                                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-3 rounded-xl font-medium transition-colors shadow-sm hover:shadow-md flex items-center gap-2"
-                            >
-                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                                Search
-                            </button>
+
+                            {/* Conditional Clear Search Button */}
+                            {filters.search && (
+                                <button
+                                    onClick={() => handleFilterChange('search', '')}
+                                    className="
+        px-4 py-2
+        border border-gray-300
+        rounded-[50px]
+        text-gray-700
+        hover:bg-gray-50
+        hover:border-gray-400
+        active:bg-gray-100
+        transition-all duration-200
+        font-medium
+        whitespace-nowrap
+        shadow-sm
+      "
+                                >
+                                    Clear Search
+                                </button>
+                            )}
                         </div>
+
                     </div>
                 </div>
 
@@ -485,18 +524,18 @@ const AgentMeetings = () => {
                         </div>
 
                         <div className="flex items-center gap-3">
-    {hasActiveFilters() && (
-        <button
-            onClick={handleClearFilters}
-            className="group cursor-pointer flex items-center gap-2 px-4 py-[8px] text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg shadow-xs hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900 hover:shadow-sm transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400"
-        >
-            <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Clear All
-        </button>
-    )}
-</div>
+                            {hasActiveFilters() && (
+                                <button
+                                    onClick={handleClearFilters}
+                                    className="group cursor-pointer flex items-center gap-2 px-4 py-[8px] text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg shadow-xs hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900 hover:shadow-sm transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400"
+                                >
+                                    <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Clear All
+                                </button>
+                            )}
+                        </div>
 
                     </div>
 

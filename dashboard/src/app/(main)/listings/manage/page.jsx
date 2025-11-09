@@ -295,7 +295,7 @@ const ManageListingsPage = () => {
       <div className="flex flex-wrap gap-2 mb-6">
         <button
           onClick={() => handleStatusFilter('active')}
-          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${status === 'active'
+          className={`px-4 py-2 rounded-[50px] text-sm font-medium transition-all duration-200 ${status === 'active'
             ? 'bg-blue-600 text-white shadow-lg'
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
@@ -304,7 +304,7 @@ const ManageListingsPage = () => {
         </button>
         <button
           onClick={() => handleStatusFilter('pending')}
-          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${status === 'pending'
+          className={`px-4 py-2 rounded-[50px] text-sm font-medium transition-all duration-200 ${status === 'pending'
             ? 'bg-yellow-600 text-white shadow-lg'
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
@@ -313,7 +313,7 @@ const ManageListingsPage = () => {
         </button>
         <button
           onClick={() => handleStatusFilter('sold')}
-          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${status === 'sold'
+          className={`px-4 py-2 rounded-[50px] text-sm font-medium transition-all duration-200 ${status === 'sold'
             ? 'bg-green-600 text-white shadow-lg'
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
@@ -322,7 +322,7 @@ const ManageListingsPage = () => {
         </button>
         <button
           onClick={() => handleStatusFilter('')}
-          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${status === ''
+          className={`px-4 py-2 rounded-[50px] text-sm font-medium transition-all duration-200 ${status === ''
             ? 'bg-gray-600 text-white shadow-lg'
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}

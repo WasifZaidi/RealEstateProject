@@ -29,7 +29,6 @@ exports.dashboardLogin = async (req, res) => {
         message: "Invalid Email or Password",
       });
     }
-    console.log("Login is Successfull")
     sendToken(accessor, res, "SignIn successful", "access_token_realEstate");
   } catch (err) {
     console.error("Dashboard Login Error:", err);
@@ -299,4 +298,18 @@ exports.deleteUser = async (req, res) => {
       message: "Internal Server Error.",
     });
   }
+};
+
+exports.dashboardlogout = (req, res) => {
+  const cookieName = "access_token_realEstate";
+
+  res.cookie(cookieName, null, {
+    expires: new Date(0),
+    httpOnly: true,
+    sameSite: "Lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+
+  res.status(200).json({ success: true, message: "Logged out successfully" });
 };

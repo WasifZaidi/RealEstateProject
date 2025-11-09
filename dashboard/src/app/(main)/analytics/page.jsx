@@ -31,6 +31,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Select, MenuItem, FormControl, InputLabel } from "@mui/material";
+import { inter } from "@/utils/fonts";
 
 // Register ChartJS components
 ChartJS.register(
@@ -145,7 +146,7 @@ const AnalyticsDashboard = () => {
         labels: { 
           font: { 
             size: 12,
-            family: "'Inter', 'SF Pro Display', -apple-system, sans-serif" 
+                    family:  inter.style.fontFamily,
           }, 
           color: "#374151",
           usePointStyle: true,
@@ -164,9 +165,11 @@ const AnalyticsDashboard = () => {
         titleFont: {
           size: 12,
           weight: '600',
+                    family:  inter.style.fontFamily,
         },
         bodyFont: {
           size: 11,
+                    family:  inter.style.fontFamily,
         },
       },
     },
@@ -179,6 +182,7 @@ const AnalyticsDashboard = () => {
           color: "#6B7280",
           font: {
             size: 11,
+                      family:  inter.style.fontFamily,
           },
         },
       },
@@ -190,6 +194,7 @@ const AnalyticsDashboard = () => {
           color: "#6B7280",
           font: {
             size: 11,
+                      family:  inter.style.fontFamily,
           },
         },
       },
@@ -206,7 +211,7 @@ const AnalyticsDashboard = () => {
         labels: { 
           font: { 
             size: 12,
-            family: "'Inter', 'SF Pro Display', -apple-system, sans-serif" 
+            family:  inter.style.fontFamily,
           }, 
           color: "#374151",
           usePointStyle: true,
@@ -225,9 +230,13 @@ const AnalyticsDashboard = () => {
         titleFont: {
           size: 12,
           weight: '600',
+                family:  inter.style.fontFamily,
         },
         bodyFont: {
-          size: 11,
+          size: 12,
+                family:  inter.style.fontFamily,
+                    weight: '600',
+                
         },
       },
     },
@@ -245,7 +254,7 @@ const AnalyticsDashboard = () => {
         labels: {
           font: { 
             size: 12,
-            family: "'Inter', 'SF Pro Display', -apple-system, sans-serif"
+            family:  inter.style.fontFamily,
           },
           color: "#374151",
           usePointStyle: true,
@@ -263,6 +272,16 @@ const AnalyticsDashboard = () => {
         cornerRadius: 8,
         padding: 12,
         boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+        titleFont: {
+          size: 12,
+          weight: '600',
+                family:  inter.style.fontFamily,
+        },
+        bodyFont: {
+          size: 12,
+                family:  inter.style.fontFamily,
+                
+        },
       },
     },
     interaction: {
@@ -275,6 +294,7 @@ const AnalyticsDashboard = () => {
           color: "#6B7280",
           font: {
             size: 11,
+                      family:  inter.style.fontFamily,
           },
         },
         grid: { 
@@ -288,17 +308,19 @@ const AnalyticsDashboard = () => {
         title: { 
           display: true, 
           text: "Revenue (PKR)", 
-          color: "#10b981",
+          color: "#006442ff",
           font: {
             size: 11,
-            weight: '600',
+            weight: '500',
+                       family:  inter.style.fontFamily,
           },
         },
         ticks: {
           color: "#10b981",
           callback: (value) => new Intl.NumberFormat("en-US", { notation: "compact" }).format(value),
           font: {
-            size: 11,
+            size: 12,
+                       family:  inter.style.fontFamily,
           },
         },
         grid: { 
@@ -312,16 +334,18 @@ const AnalyticsDashboard = () => {
         title: { 
           display: true, 
           text: "Transactions", 
-          color: "#3b82f6",
+          color: "#003fa5ff",
           font: {
-            size: 11,
-            weight: '600',
+            size: 12,
+            weight: '500',
+                       family:  inter.style.fontFamily,
           },
         },
         ticks: { 
           color: "#3b82f6",
           font: {
             size: 11,
+                      family:  inter.style.fontFamily,
           },
         },
         grid: { 
@@ -346,7 +370,7 @@ const AnalyticsDashboard = () => {
           backgroundColor: colors,
           borderWidth: 2,
           borderColor: "#ffffff",
-          hoverOffset: 15, // Added hover effect
+          hoverOffset: 0, // Added hover effect
         }],
       },
       meetingStatus: {
@@ -356,7 +380,7 @@ const AnalyticsDashboard = () => {
           backgroundColor: colors.slice(0, charts?.meetingStatusOverview?.length || 0),
           borderWidth: 2,
           borderColor: "#ffffff",
-          hoverOffset: 15, // Added hover effect
+          hoverOffset: 0, // Added hover effect
           cutout: '60%', // For doughnut chart
         }],
       },
@@ -366,7 +390,7 @@ const AnalyticsDashboard = () => {
           label: "Listings",
           data: charts?.priceRangeDistribution?.map((item) => item?.count || 0) || [],
           backgroundColor: "#3b82f6",
-          borderRadius: 4,
+          borderRadius: 0,
         }],
       },
       propertyType: {
@@ -376,7 +400,7 @@ const AnalyticsDashboard = () => {
           backgroundColor: colors,
           borderWidth: 2,
           borderColor: "#ffffff",
-          hoverOffset: 15, // Added hover effect
+          hoverOffset: 0, // Added hover effect
         }],
       },
       revenueTrend: {
@@ -419,8 +443,8 @@ const AnalyticsDashboard = () => {
         datasets: [{
           label: "Count",
           data: trendingAnalytics?.popularAmenities?.map((item) => item?.count || 0) || [],
-          backgroundColor: "#f59e0b",
-          borderRadius: 4,
+          backgroundColor: "#3b82f6",
+          borderRadius: 0,
         }],
       },
     };
@@ -461,7 +485,7 @@ const AnalyticsDashboard = () => {
   const { overview, performanceAnalytics, trendingAnalytics, averages, filter } = analyticsData;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6 max-w-[1600px] mx-auto">
       {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div className="flex items-center">
@@ -710,7 +734,7 @@ const AnalyticsDashboard = () => {
       {/* Trending Analytics */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold text-gray-800 mb-6">Trending Insights</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-medium mb-4 flex items-center text-gray-800">
               <Star className="w-5 h-5 mr-2 text-yellow-500" />

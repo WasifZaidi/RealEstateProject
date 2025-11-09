@@ -231,41 +231,96 @@ const ManageUsers = ({ role }) => {
         },
     ];
 
+
+    const filteredRoleOptions = roleOptions.filter(option => {
+    // Hide "admin" if currentRole is "manager"
+    if (role === "manager" && option.value === "admin") return false;
+    return true;
+});
+
     return (
         <div className="min-h-screen rounded-[20px]  bg-white px-4 sm:px-6 py-6  max-w-6xl w-[95%] mx-auto py-8">
             {/* Header Section */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+            <div className="flex flex-col gap-y-[22px] mb-8">
                 <div className="mb-4 lg:mb-0">
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
                         <div className="p-2 bg-blue-100 rounded-xl">
                             <User className="w-6 h-6 text-blue-600" />
                         </div>
-                        User Management
+                        User Management {role}
                     </h1>
                     <p className="text-gray-600 mt-2 text-sm">Manage user roles and permissions</p>
                 </div>
 
                 {/* Search Box */}
-                <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input
-                            type="text"
-                            placeholder="Search by Custom ID, name, or email..."
-                            value={customId}
-                            onChange={(e) => setCustomId(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition-all"
-                        />
-                    </div>
-                    <button
-                        onClick={handleSearch}
-                        className="bg-gradient-to-r cursor-pointer from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 flex items-center gap-2 justify-center"
-                    >
-                        <Search className="w-4 h-4" />
-                        Search
-                    </button>
-                </div>
+               <div className="flex flex-col sm:flex-row items-center gap-3 max-w-[500px] w-[100%] lg:w-auto">
+  <div className="relative flex-1 w-full items-center">
+    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+    <input
+      type="text"
+      placeholder="Search by Custom ID"
+      value={customId}
+      onChange={(e) => setCustomId(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault(); // Prevent form submission if wrapped in form
+          handleSearch();
+        }
+      }}
+      className="
+        normal_input mod_2
+      "
+      aria-label="Search by Custom ID"
+    />
+    
+    {/* Clear button inside input when customId exists */}
+    {customId && (
+      <button
+        onClick={() => {
+          setCustomId('');
+          // Optionally trigger search when clearing
+          // handleSearch(); 
+        }}
+        className="
+          absolute right-3 top-1/2 transform -translate-y-1/2
+          text-gray-400 hover:text-gray-600
+          transition-colors duration-200
+          p-1 rounded-full
+          hover:bg-gray-100
+        "
+        aria-label="Clear search"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    )}
+  </div>
+
+  {/* Conditional Clear Search Button */}
+  {customId && (
+    <button
+      onClick={() => {
+        setCustomId('');
+        // Optionally trigger search when clearing
+        // handleSearch();
+      }}
+      className="
+        px-4 py-2
+        border border-gray-300
+        rounded-[50px]
+        text-gray-700
+        hover:bg-gray-50
+        hover:border-gray-400
+        active:bg-gray-100
+        transition-all duration-200
+        font-medium
+        whitespace-nowrap
+        shadow-sm
+      "
+    >
+      Clear Search
+    </button>
+  )}
+</div>
             </div>
 
             {/* Stats Cards */}
@@ -381,7 +436,7 @@ const ManageUsers = ({ role }) => {
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-6">
-                                                    <span className="text-sm text-gray-900 font-medium font-mono tracking-wide">
+                                                    <span className="text-[12px] text-gray-900 font-medium tracking-wide">
                                                         {user.customId}
                                                     </span>
                                                 </td>
@@ -427,7 +482,7 @@ const ManageUsers = ({ role }) => {
                         size="large"
                         sx={{
                             '& .MuiPaginationItem-root': {
-                                borderRadius: '10px',
+                                borderRadius: '50px',
                                 margin: '0 2px',
                             },
                             '& .Mui-selected': {
@@ -481,7 +536,7 @@ const ManageUsers = ({ role }) => {
                             <div>
                                 <MuiDropdown
                                     title="Assign Role"
-                                    options={roleOptions}
+                                    options={filteredRoleOptions}
                                     value={selectedRole}
                                     onChange={(val) => setSelectedRole(val)}
                                     placeholder="Select role..."

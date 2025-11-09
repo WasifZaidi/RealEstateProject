@@ -77,7 +77,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, default: "user" },
   resetPasswordToken: String,
   resetPasswordExpire: Date,
-  otpCode: Number,
+  otp: Number,
   otpExpire: Date,
   tempEmail: { type: String },
   emailChangeVerified: { type: Boolean, default: false },

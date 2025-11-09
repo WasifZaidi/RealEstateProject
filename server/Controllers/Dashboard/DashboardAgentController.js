@@ -49,11 +49,10 @@ exports.createAgent = async (req, res) => {
     }
 
     // ✅ 2. Prevent duplicate profile
-    const existingAgent = await Agent.findOne({ email });
+    const existingAgent = await Agent.findOne({ user: req.user.id }).session(session);
     if (existingAgent) {
-      throw new Error("VALIDATION_ERROR: Agent with this email already exists.");
+      throw new Error("VALIDATION_ERROR: This user already has an agent profile.");
     }
-
     // ✅ 3. Handle image upload
     let profileImage = null;
     if (req.file) {
@@ -95,13 +94,13 @@ exports.createAgent = async (req, res) => {
             specialization: Array.isArray(specialization)
               ? specialization
               : specialization
-              ? specialization.split(",").map((s) => s.trim())
-              : [],
+                ? specialization.split(",").map((s) => s.trim())
+                : [],
             languages: Array.isArray(languages)
               ? languages
               : languages
-              ? languages.split(",").map((s) => s.trim())
-              : [],
+                ? languages.split(",").map((s) => s.trim())
+                : [],
             profileImage,
             socialLinks: {
               facebook: facebook || "",
@@ -148,6 +147,14 @@ exports.createAgent = async (req, res) => {
   } catch (error) {
     await session.abortTransaction();
 
+      if (error.code === 11000 && error.keyPattern?.user) {
+    return res.status(400).json({
+      success: false,
+      message: "Each user can only have one agent profile.",
+      type: "DUPLICATE_AGENT",
+    });
+  }
+  
     // 🗑️ Rollback uploaded files if transaction fails
     if (uploadedPublicIds.length > 0) {
       try {
