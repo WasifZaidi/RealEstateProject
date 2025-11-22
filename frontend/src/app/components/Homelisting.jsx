@@ -4,6 +4,8 @@ import Sqftsvg from "../svg/Sqftsvg";
 import Bathsvg from "../svg/Bathsvg";
 import BedSvg from "../svg/BedSvg";
 import LocationSvg from "../svg/LocationSvg";
+import { getCoverImage, formatPrice, getLocationString, getPricePeriod, ModernTag, PropertyForTag, PropertyTypeBadge } from "@/utils/cardhelpers"
+import { BLUE_PLACEHOLDER } from "@/utils/blueplaceholder";
 
 // ✅ Server Component – fetched directly in SSR
 async function getHomeListings() {
@@ -21,140 +23,6 @@ async function getHomeListings() {
         return [];
     }
 }
-
-// Utility function to get cover image or first media
-const getCoverImage = (media) => {
-    if (!media || media.length === 0) return "/temp_img/listings/list1.jpg";
-
-    const coverImage = media.find(item => item.isCover) || media[0];
-    return coverImage.url || "/temp_img/listings/list1.jpg";
-};
-
-// Utility function to format price
-const formatPrice = (price) => {
-    if (!price) return "N/A";
-
-    const amount = price.amount?.toLocaleString() || "0";
-    const currency = price.currency === "USD" ? "$" : price.currency || "$";
-
-    return `${currency}${amount}`;
-};
-
-// Utility function to get location string
-const getLocationString = (location) => {
-    if (!location) return "Unknown location";
-
-    const parts = [];
-    if (location.neighborhood) parts.push(location.neighborhood);
-    if (location.city) parts.push(location.city);
-    if (location.state) parts.push(location.state);
-
-    return parts.length > 0 ? parts.join(", ") : "Unknown location";
-};
-
-// Utility function to get price period
-const getPricePeriod = (propertyFor, priceType) => {
-    if (propertyFor === "rent") return "/Month";
-    if (priceType === "auction") return " (Auction)";
-    return "";
-};
-
-// Modern Tag Component
-const ModernTag = ({ children, variant = "default", className = "" }) => {
-    const baseClasses = "inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200";
-
-    const variants = {
-        default:
-            "bg-gray-100/80 text-gray-800 border border-gray-300 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]",
-
-        primary:
-            "bg-blue-600/10 text-blue-700 border border-blue-300 shadow-sm hover:bg-blue-600/20 backdrop-blur-sm",
-
-        success:
-            "bg-emerald-600/10 text-emerald-700 border border-emerald-300 shadow-sm hover:bg-emerald-600/20 backdrop-blur-sm",
-
-        warning:
-            "bg-amber-500/10 text-amber-700 border border-amber-300 shadow-sm hover:bg-amber-500/20 backdrop-blur-sm",
-
-        danger:
-            "bg-rose-500/10 text-rose-700 border border-rose-300 shadow-sm hover:bg-rose-500/20 backdrop-blur-sm",
-
-        premium:
-            "bg-gradient-to-r from-fuchsia-500 to-violet-600 text-white shadow-md hover:opacity-90",
-
-        featured:
-            "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md hover:opacity-90"
-    };
-
-
-    return (
-        <span className={`${baseClasses} ${variants[variant]} ${className}`}>
-            {children}
-        </span>
-    );
-};
-
-// Property For Tag Component
-const PropertyForTag = ({ propertyFor }) => {
-    const getTagConfig = (type) => {
-        const config = {
-            Sell: { label: "For Sale", variant: "success" },
-            Rent: { label: "For Rent", variant: "primary" },
-            Lease: { label: "For Lease", variant: "warning" }
-        };
-
-        return config[type] || { label: type, variant: "default" };
-    };
-
-    const { label, variant } = getTagConfig(propertyFor);
-
-    return (
-        <ModernTag variant={variant} className="shadow-sm">
-            {label}
-        </ModernTag>
-    );
-};
-
-// Status Badge Component
-const StatusBadge = ({ status }) => {
-    const getStatusConfig = (status) => {
-        const config = {
-            active: { color: "bg-green-500", label: "Active" },
-            draft: { color: "bg-gray-500", label: "Draft" },
-            pending: { color: "bg-amber-500", label: "Pending" },
-            sold: { color: "bg-red-500", label: "Sold" },
-            expired: { color: "bg-gray-400", label: "Expired" },
-            archived: { color: "bg-gray-600", label: "Archived" }
-        };
-
-        return config[status] || { color: "bg-gray-500", label: status };
-    };
-
-    const { color, label } = getStatusConfig(status);
-
-    return (
-        <ModernTag variant="default" className="bg-white/90 backdrop-blur-sm border-white/30 shadow-md">
-            <span className={`rounded-full h-2 w-2 mr-1.5 ${color}`} />
-            {label}
-        </ModernTag>
-    );
-};
-
-// Property Type Badge Component
-const PropertyTypeBadge = ({ propertyType }) => {
-    const formatPropertyType = (type) => {
-        return type?.replace(/-/g, " ")?.replace(/\b\w/g, l => l.toUpperCase()) || "Property";
-    };
-
-    return (
-        <ModernTag
-            variant="default"
-            className="bg-blue-50 text-blue-700 border border-blue-200 shadow-sm font-medium tracking-wide px-3 py-1 rounded-full text-[12px]"
-        >
-            {formatPropertyType(propertyType)}
-        </ModernTag>
-    );
-};
 
 
 export default async function Homelisting() {
@@ -185,22 +53,22 @@ export default async function Homelisting() {
                         listings.map((listing, index) => (
                             <div
                                 key={listing._id || index}
-                                className="card min-w-[calc(25%-20px)] rounded-2xl overflow-hidden bg-white shadow-sm  transition-all duration-300 max-[768px]:min-w-[calc(50%-16px)] max-[500px]:min-w-full group"
+                                className="card cursor-pointer min-w-[calc(25%-20px)] rounded-2xl overflow-hidden bg-white shadow-sm  transition-all duration-300 max-[768px]:min-w-[calc(50%-16px)] max-[500px]:min-w-full group"
                             >
                                 {/* Image Section */}
                                 <div className="img_box relative h-[250px] overflow-hidden">
-                                    {/* 
-                  <Image
-                    src={getCoverImage(listing.media)}
-                    alt={listing.title || "Property Listing"}
-                    fill
-                    className="img group-hover:scale-110 transition-transform duration-500 ease-out"
-                    style={{ objectFit: "cover" }}
-                    quality={85}
-                    sizes="(max-width: 768px) 50vw, 25vw"
-                    priority={index < 3}
-                  />
-                  */}
+                                    <Image
+                                        src={getCoverImage(listing.media)}
+                                        alt={listing.title || "Property Listing"}
+                                        fill
+                                        className="img group-hover:scale-110 transition-transform duration-500 ease-out"
+                                        style={{ objectFit: "cover" }}
+                                        quality={85}
+                                        sizes="(max-width: 768px) 50vw, 25vw"
+                                        priority={index < 3}
+                                        placeholder="blur"
+                                        blurDataURL={BLUE_PLACEHOLDER}
+                                    />
 
                                     {/* Gradient Overlay */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

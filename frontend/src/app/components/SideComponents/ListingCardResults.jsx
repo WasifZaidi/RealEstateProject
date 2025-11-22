@@ -1,35 +1,19 @@
-"use client";
 import Link from "next/link";
 import Image from "next/image";
-import { Check, Scale } from "lucide-react";
-import WishlistButton from "../components/WishlistButton";
+import WishlistButton from "../../components/WishlistButton";
 import { inter } from "@/utils/fonts";
-import Sqftsvg from "../svg/Sqftsvg";
-import Bathsvg from "../svg/Bathsvg";
-import BedSvg from "../svg/BedSvg";
-import LocationSvg from "../svg/LocationSvg";
+import Sqftsvg from "../../svg/Sqftsvg";
+import Bathsvg from "../../svg/Bathsvg";
+import BedSvg from "../../svg/BedSvg";
+import LocationSvg from "../../svg/LocationSvg";
 import { getCoverImage, formatPrice, getLocationString, getPricePeriod, ModernTag, PropertyForTag, PropertyTypeBadge } from "@/utils/cardhelpers"
 import { BLUE_PLACEHOLDER } from "@/utils/blueplaceholder";
 
-
-const ListingCard = ({ listing, selectedForCompare, setSelectedForCompare }) => {
-  const isSelected = selectedForCompare.includes(listing._id);
-
-  const handleCompareClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    setSelectedForCompare((prev) =>
-      prev.includes(listing._id)
-        ? prev.filter((id) => id !== listing._id)
-        : [...prev, listing._id]
-    );
-  };
-
+const ListingCardResults = ({ listing }) => {
   return (
-    <div className="relative group rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-blue-300 max-w-[400px] mx-auto">
+    <div className=" rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 w-[100%]">
       <Link href={`/properties/${listing._id}`}>
-        {/* Image Section - Same as Homelisting */}
+        {/* Image Section */}
         <div className="img_box relative h-[250px] overflow-hidden">
           <Image
             src={getCoverImage(listing.media)}
@@ -48,9 +32,9 @@ const ListingCard = ({ listing, selectedForCompare, setSelectedForCompare }) => 
 
           {/* Top Badges Container */}
           <div className="absolute top-4 left-4 right-4 flex flex-wrap gap-2">
-            <PropertyForTag 
-              propertyFor={listing.propertyFor} 
-              listingType={listing.listingType} 
+            <PropertyForTag
+              propertyFor={listing.propertyFor}
+              listingType={listing.listingType}
             />
             {listing.isFeatured && (
               <ModernTag variant="featured" className="shadow-lg">
@@ -65,10 +49,10 @@ const ListingCard = ({ listing, selectedForCompare, setSelectedForCompare }) => 
           </div>
 
           {/* Wishlist Button */}
-                 <WishlistButton listingId={listing._id} isInitiallySaved={true} />
+          <WishlistButton listingId={listing._id} isInitiallySaved={true} />
         </div>
 
-        {/* Content Section - Same as Homelisting */}
+        {/* Content Section */}
         <div className="content bg-white p-6 pt-4">
           <div className="flex items-center mb-4">
             <PropertyTypeBadge
@@ -81,7 +65,7 @@ const ListingCard = ({ listing, selectedForCompare, setSelectedForCompare }) => 
             className={`text-[14px] text-[#2c2c2c] mb-3 flex items-center gap-2 ${inter.className}`}
           >
             <LocationSvg className="text-blue-600" />
-            {getLocationString(listing.location)}
+            {getLocationString(location)}
           </p>
 
           {/* Title */}
@@ -144,30 +128,8 @@ const ListingCard = ({ listing, selectedForCompare, setSelectedForCompare }) => 
           </div>
         </div>
       </Link>
-
-      {/* Compare Button - Your additional functionality */}
-      <button
-        onClick={handleCompareClick}
-        className={`absolute bottom-4 right-4 flex items-center gap-2 px-3.5 py-2.5 text-sm font-semibold rounded-[50px] transition-all duration-300 shadow-md ${
-          isSelected
-            ? "bg-gradient-to-br from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700"
-            : "bg-gradient-to-br from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800"
-        }`}
-      >
-        {isSelected ? (
-          <>
-            <Check size={16} />
-            Added
-          </>
-        ) : (
-          <>
-            <Scale size={16} />
-            Compare
-          </>
-        )}
-      </button>
     </div>
   );
 };
 
-export default ListingCard;
+export default ListingCardResults;

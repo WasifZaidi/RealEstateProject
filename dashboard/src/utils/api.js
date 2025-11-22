@@ -83,6 +83,7 @@ export const uploadListing = async ({
     // Request
     const res = await fetch("http://localhost:3001/api/listings/create", {
       method: "POST",
+      credentials: "include",
       body: formData,
     });
 

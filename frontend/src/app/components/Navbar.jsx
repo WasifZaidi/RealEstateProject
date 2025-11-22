@@ -16,7 +16,7 @@ import {
   Info,
   Phone,
 } from "lucide-react";
-
+import Link from "next/link"
 // The path to your pure logo image
 const LOGO_IMAGE_PATH = "/temp_img/logo.webp"; 
 
@@ -82,6 +82,7 @@ const Navbar = ({ user }) => {
 
   const isExcludedPage =
     excludedPaths.includes(pathname) || meetingRoutePattern.test(pathname) || tourDetailsPattern.test(pathname);
+
 
   return (
     <>
@@ -231,72 +232,95 @@ const Navbar = ({ user }) => {
                       </div>
 
                       {/* Menu Items */}
-                      <div className="p-2">
-                        <a
-                          href="/profile"
-                          className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                        >
-                          <div className="h-9 w-9 rounded-xl bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-all duration-200 group-hover:scale-105">
-                            <User className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-semibold">My Profile</div>
-                            <div className="text-xs text-gray-500">View and edit profile</div>
-                          </div>
-                        </a>
-                        <a
-                          href="/saved"
-                          className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                        >
-                          <div className="h-9 w-9 rounded-xl bg-red-100 flex items-center justify-center group-hover:bg-red-200 transition-all duration-200 group-hover:scale-105 relative">
-                            <Heart className="h-5 w-5 text-red-500" />
-                            <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                              3
-                            </span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-semibold">Saved Homes</div>
-                            <div className="text-xs text-gray-500">Your favorite properties</div>
-                          </div>
-                        </a>
-                        <a
-                          href="/settings"
-                          className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                        >
-                          <div className="h-9 w-9 rounded-xl bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all duration-200 group-hover:scale-105">
-                            <Settings className="h-5 w-5 text-gray-600" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-semibold">Settings</div>
-                            <div className="text-xs text-gray-500">Account preferences</div>
-                          </div>
-                        </a>
-                        <a
-                          href="/help"
-                          className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                        >
-                          <div className="h-9 w-9 rounded-xl bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-all duration-200 group-hover:scale-105">
-                            <HelpCircle className="h-5 w-5 text-green-600" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-semibold">Help & Support</div>
-                            <div className="text-xs text-gray-500">Get assistance</div>
-                          </div>
-                        </a>
-                        <div className="my-2 border-t border-gray-200"></div>
-                        <button
-                          onClick={handleLogout}
-                          className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 group"
-                        >
-                          <div className="h-9 w-9 rounded-xl bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-all duration-200 group-hover:scale-105">
-                            <LogOut className="h-5 w-5 text-red-600" />
-                          </div>
-                          <div className="flex-1 text-left">
-                            <div className="font-semibold">Sign Out</div>
-                            <div className="text-xs text-red-500">Logout from account</div>
-                          </div>
-                        </button>
-                      </div>
+                <div className="p-2">
+  <Link
+    href="/profile/view"
+    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 
+      hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
+  >
+    <div className="h-9 w-9 rounded-xl bg-blue-100 flex items-center justify-center 
+      group-hover:bg-blue-200 transition-all duration-200 group-hover:scale-105"
+    >
+      <User className="h-5 w-5 text-blue-600" />
+    </div>
+    <div className="flex-1">
+      <div className="font-semibold">My Profile</div>
+      <div className="text-xs text-gray-500">View and edit profile</div>
+    </div>
+  </Link>
+
+  <Link
+    href="/saved"
+    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 
+      hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
+  >
+    <div className="h-9 w-9 rounded-xl bg-red-100 flex items-center justify-center 
+      group-hover:bg-red-200 transition-all duration-200 group-hover:scale-105 relative"
+    >
+      <Heart className="h-5 w-5 text-red-500" />
+      <span
+        className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs 
+        rounded-full flex items-center justify-center"
+      >
+        3
+      </span>
+    </div>
+    <div className="flex-1">
+      <div className="font-semibold">Saved Homes</div>
+      <div className="text-xs text-gray-500">Your favorite properties</div>
+    </div>
+  </Link>
+
+  <Link
+    href="/settings"
+    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 
+      hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
+  >
+    <div className="h-9 w-9 rounded-xl bg-gray-100 flex items-center justify-center 
+      group-hover:bg-gray-200 transition-all duration-200 group-hover:scale-105"
+    >
+      <Settings className="h-5 w-5 text-gray-600" />
+    </div>
+    <div className="flex-1">
+      <div className="font-semibold">Settings</div>
+      <div className="text-xs text-gray-500">Account preferences</div>
+    </div>
+  </Link>
+
+  <Link
+    href="/help"
+    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 
+      hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
+  >
+    <div className="h-9 w-9 rounded-xl bg-green-100 flex items-center justify-center 
+      group-hover:bg-green-200 transition-all duration-200 group-hover:scale-105"
+    >
+      <HelpCircle className="h-5 w-5 text-green-600" />
+    </div>
+    <div className="flex-1">
+      <div className="font-semibold">Help & Support</div>
+      <div className="text-xs text-gray-500">Get assistance</div>
+    </div>
+  </Link>
+
+  <div className="my-2 border-t border-gray-200" />
+
+  <button
+    onClick={handleLogout}
+    className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-600 
+      hover:bg-red-50 rounded-xl transition-all duration-200 group"
+  >
+    <div className="h-9 w-9 rounded-xl bg-red-50 flex items-center justify-center 
+      group-hover:bg-red-100 transition-all duration-200 group-hover:scale-105"
+    >
+      <LogOut className="h-5 w-5 text-red-600" />
+    </div>
+    <div className="flex-1 text-left">
+      <div className="font-semibold">Sign Out</div>
+      <div className="text-xs text-red-500">Logout from account</div>
+    </div>
+  </button>
+</div>
                     </div>
                   )}
                 </div>

@@ -99,7 +99,6 @@ svg {
     font-size: 15px;
     line-height: 1.5;
     border: 1.5px solid #e2e8f0; 
-    border-radius: 12px;
     background: #ffffff;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04); 
     outline: none;
@@ -204,5 +203,57 @@ svg {
 @media screen and (max-width: 450px) {
   .range-grid-modal {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* -Button-- */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem; /* gap-2 */
+  padding: 0.75rem 1.5rem; /* px-6 py-3 */
+
+  background: linear-gradient(to bottom right, #2563eb, #4f46e5); /* from-blue-600 to-indigo-700 */
+  color: white;
+
+  border-radius: 50px;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+
+  transition: transform 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: scale(1.03);
+}
+
+/* Fix for z-index items inside */
+.btn-primary > * {
+  position: relative;
+  z-index: 10;
+}
+
+.results_grid{
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+}
+
+@media screen and (max-width: 1300px) {
+  .results_grid{
+  grid-template-columns: repeat(3,1fr);
+}
+}
+
+@media screen and (max-width: 900px) {
+  .results_grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media screen and (max-width: 550px) {
+  .results_grid {
+    grid-template-columns: repeat(1, 1fr);
   }
 }

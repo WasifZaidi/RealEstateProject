@@ -13,7 +13,7 @@ export default function AgentVerificationAlert({ userName = "" }) {
 
 
   return (
-    <div className="relative max-w-4xl mx-auto bg-yellow-50 border border-yellow-300 rounded-2xl shadow-sm p-5 mt-6 animate-fadeIn">
+    <div className="relative mb-10 max-w-4xl mx-auto bg-yellow-50 border border-yellow-300 rounded-2xl shadow-sm p-5 mt-6 animate-fadeIn">
       <div className="flex items-start gap-4">
         <div className="flex-shrink-0 mt-1">
           <div className="p-2 bg-yellow-100 text-yellow-700 rounded-full">

@@ -8,6 +8,7 @@ const {
   filterListingSchema, 
   idParamSchema 
 } = require("../middelware/validation/listingSchemas");
+const { isAuthenticated, authorizeRoles } = require("../middelware/auth");
 const router = express.Router();
 const rateLimit = require("express-rate-limit");
 const { optionalAuth } = require("../middelware/optionalAuth");
@@ -26,6 +27,7 @@ const createListingLimiter = rateLimit({
 
 router.post(
   "/create",
+  isAuthenticated("access_token_realEstate"),  authorizeRoles("admin", "manager", "agent"),
   createListingLimiter,
   upload.array("files", 10),
   (err, req, res, next) => {
@@ -58,7 +60,5 @@ router.get(
 );
 
 router.get("/results/homepage", ListingController.getHomePageListings)
-
-router.delete("/delete", ListingController.deleteAllListings)
 
 module.exports = router;

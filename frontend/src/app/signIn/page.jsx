@@ -127,11 +127,10 @@ const Page = () => {
 
   return (
     <>
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4 py-8">
-        <div className="w-full max-w-md">
+        <div className="w-full mx-auto my-[40px] max-w-md bg-white border border-gray-200 rounded-3xl shadow-xl p-8">
           {/* Header Section */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-lg">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-[50px] mb-4 shadow-lg">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
@@ -141,8 +140,7 @@ const Page = () => {
           </div>
 
           {/* Form Card */}
-          <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
-            <div className="space-y-6">
+          <div className="space-y-6">
               {/* Email Field */}
               <div>
                 <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -154,9 +152,8 @@ const Page = () => {
                     id="email"
                     value={Email}
                     onChange={(e) => SetEmail(e.target.value)}
-                    className={`w-full pl-4 pr-4 py-3.5 border-2 rounded-xl transition-all duration-200 outline-none ${Errors.Email
-                      ? "border-red-400 bg-red-50 focus:border-red-500 focus:ring-4 focus:ring-red-100"
-                      : "border-gray-200 bg-gray-50 hover:border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                         className={`normal_input ${Errors.Email
+                      && "normal_err"
                       }`}
                     placeholder="you@example.com"
                   />
@@ -183,9 +180,8 @@ const Page = () => {
                     id="password"
                     value={Password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={`w-full pl-4 pr-4 py-3.5 border-2 rounded-xl transition-all duration-200 outline-none ${Errors.Password
-                      ? "border-red-400 bg-red-50 focus:border-red-500 focus:ring-4 focus:ring-red-100"
-                      : "border-gray-200 bg-gray-50 hover:border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    className={`normal_input ${Errors.Password
+                      && "normal_err"
                       }`}
                     placeholder="Enter your password"
                   />
@@ -226,7 +222,7 @@ const Page = () => {
                 type="button"
                 onClick={handleLogin}
                 disabled={Loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                 className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-[50px] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
               >
                 {Loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -260,7 +256,6 @@ const Page = () => {
               <FcGoogle className="text-2xl" />
               Continue with Google
             </button>
-          </div>
 
           {/* Sign Up Link */}
           <p className="text-center text-gray-600 mt-8">
@@ -270,8 +265,6 @@ const Page = () => {
             </a>
           </p>
         </div>
-      </div>
-
       {
         toast && (
           <CustomToast
@@ -282,9 +275,7 @@ const Page = () => {
           />
         )
       }
-
     </>
-
   );
 };
 

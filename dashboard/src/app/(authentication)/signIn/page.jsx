@@ -56,6 +56,7 @@ const LoginPage = () => {
         setToast({ type: "error", message: data.message || "Something went wrong" });
         return;
       };
+      console.log("login successfull")
       router.push("/")
     } catch (err) {
       setToast({ type: "error", message: "Network error. Try again." });

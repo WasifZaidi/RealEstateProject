@@ -47,6 +47,11 @@ exports.createListing = async (req, res) => {
   const session = await Listing.startSession();
   session.startTransaction();
 
+  const agentRef = req.user.id;
+  if (!agentRef) {
+    res.status(400).json({ success: false, message: "not agent found" })
+  }
+
   let cloudinaryPublicIds = []; // Track uploaded files for rollback
   let tempFiles = []; // Track temp files for cleanup
 
@@ -224,6 +229,8 @@ exports.createListing = async (req, res) => {
       details,
       amenities: Array.isArray(amenities) ? amenities : [],
       media,
+      agentRef: agentRef,
+      agentId: uuidv4(),
       owner: owner.trim(),
       agent: agent?.trim(),
       contactInfo: safeParse(contactInfo, {}),
@@ -354,14 +361,14 @@ exports.getListingById = async (req, res) => {
       listing: id,
       status: "Scheduled",
     });
-    
+
 
     // 4️⃣ Add flag to response
     const listingWithStatus = {
       ...listing,
       isScheduledTour: !!existingTour,
     };
-    
+
 
     // 5️⃣ Success response
     return res.status(200).json({
@@ -666,7 +673,7 @@ exports.getListingByFilter = async (req, res) => {
 
 exports.getAgentListings = async (req, res) => {
   try {
-    const agentRef = req.user?.id; 
+    const agentRef = req.user?.id;
     if (!agentRef) {
       return res.status(401).json({ success: false, message: 'Unauthorized - Agent ID missing' });
     }
@@ -685,7 +692,7 @@ exports.getAgentListings = async (req, res) => {
         { description: { $regex: search, $options: 'i' } },
       ];
     }
-    
+
 
 
     const listings = await Listing.find(query)
@@ -717,33 +724,15 @@ exports.getAgentListings = async (req, res) => {
   }
 };
 
-exports.deleteAllListings = async (req, res) => {
-  try {
-    const result = await Listing.deleteMany({}); // deletes all documents
-
-    res.status(200).json({
-      success: true,
-      message: 'All listings have been deleted successfully.',
-      deletedCount: result.deletedCount
-    });
-  } catch (error) {
-    console.error('Error deleting listings:', error);
-    res.status(500).json({
-      success: false,
-      message: 'An error occurred while deleting listings.',
-      error: error.message
-    });
-  }
-};
 
 exports.getHomePageListings = async (req, res) => {
   try {
     // Fetch top 4 newest featured listings
     const listings = await Listing.find({ isFeatured: true, status: "active" })
-      .sort({ createdAt: -1 }) 
+      .sort({ createdAt: -1 })
       .limit(4)
       .select("title description price location media propertyType status isFeatured listedAt") // select only relevant fields for homepage
-      .lean(); 
+      .lean();
 
     // Handle case when no listings found
     if (!listings || listings.length === 0) {

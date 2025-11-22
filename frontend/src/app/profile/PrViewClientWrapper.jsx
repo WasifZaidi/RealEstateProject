@@ -130,14 +130,14 @@ const EnterpriseModal = ({
           <div className="flex space-x-3 pt-6 border-t mt-6">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-[50px] hover:bg-gray-50 transition-colors font-medium"
               disabled={isLoading}
             >
               Cancel
             </button>
             <button
               onClick={onSave}
-              className={`flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+              className={`flex-1 px-4 py-3 bg-blue-600 text-white rounded-[50px] hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed`}
               disabled={saveDisabled || isLoading}
             >
               {isLoading ? (
@@ -177,7 +177,7 @@ const SingleFieldEdit = React.forwardRef(
           value={currentValue}
           onChange={onChange}
           // Assuming 'normal_input' and 'pl_2' are defined in a global CSS file
-          className={`normal_input ${Icon ? "pl_2" : ""}`}
+          className={`normal_input  ${Icon ? "pl_medium " : ""}`}
           placeholder={placeholder}
           autoComplete="off"
         />

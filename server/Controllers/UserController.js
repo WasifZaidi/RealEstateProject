@@ -6,6 +6,7 @@ const { nanoid } = require('nanoid');
 const cloudinary = require("../utils/cloudinary");
 const { v4: uuidv4 } = require("uuid")
 const FileCleanupManager = require("../utils/fileCleanup");
+const crypto = require("crypto");
 
 exports.signUp = async (req, res) => {
     try {
@@ -166,11 +167,14 @@ exports.googleLogin = async (req, res) => {
             return sendToken(user, res, "SignIn successful", "user_token_realEstate");
         }
 
+                const customId = `${Date.now()}-${nanoid(6)}`
+
         // Create new Google user
         user = await User.create({
             Email: email,
             userName: name,
             ProfileImage: picture,
+            customId,
             loginProvider: "google",
             isVerified: true,
         });
@@ -185,7 +189,6 @@ exports.googleLogin = async (req, res) => {
 
 exports.getLoggedInUser = async (req, res) => {
     try {
-        console.log("api hits");
         if (!req.user) {
             return res.status(404).json({ success: false, message: "User not found" })
         }

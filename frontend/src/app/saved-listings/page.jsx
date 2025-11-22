@@ -181,7 +181,7 @@ export default function SavedListingsPage() {
 
           <button
             onClick={() => router.push("/")}
-            className="group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-[50px] font-medium overflow-hidden transition-transform duration-300 hover:scale-[1.03]"
+            className="btn-primary"
           >
             <Home size={18} className="relative z-10" />
             <span className="relative z-10 whitespace-nowrap">Browse More</span>
@@ -201,13 +201,13 @@ export default function SavedListingsPage() {
           <p className="text-gray-500 max-w-md mx-auto mb-8 leading-relaxed text-sm sm:text-base">
             Start exploring beautiful properties and save your favorites to see them here!
           </p>
-          <button
-            onClick={() => router.push("/")}
-            className="group inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-br from-pink-500 to-purple-600 text-white rounded-xl hover:from-pink-600 hover:to-purple-700 transform hover:scale-105 hover:shadow-lg transition-all duration-300 font-semibold"
-          >
-            <Home size={20} />
-            Discover Properties
-          </button>
+         <button
+    onClick={() => router.push("/")}
+    className="btn-primary mx-auto"
+>
+    <Home size={20} />
+    Discover Properties
+</button>
         </div>
       ) : (
         <>
