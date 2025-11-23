@@ -1,39 +1,42 @@
-"use client";
 import React from "react";
 import Pagination from "@mui/material/Pagination";
 import Stack from "@mui/material/Stack";
-import NoListings from "./SideComponents/NoListings";
+// import NoListings from "./SideComponents/NoListings";
 import Listing_card_results from "./SideComponents/ListingCardResults";
-const ListingsGrid = ({ listings, pagination, searchParams, hasError }) => {
+import { generatePageUrl } from "../../lib/url_utils";
+
+// Server component - remove "use client"
+const ListingsGrid = ({ 
+  listings, 
+  wishlistId_s, 
+  pagination, 
+  searchParams, 
+  hasError 
+}) => {
   if (hasError) return null;
 
   if (!listings || listings.length === 0) {
     return (
-      <NoListings/>
+      <></>
     );
   }
-
-  // Generate URL for Next.js Link
-  const generatePageUrl = (page) => {
-    const params = new URLSearchParams(
-      typeof searchParams === "string"
-        ? searchParams
-        : Object.fromEntries(searchParams?.entries?.() || [])
-    );
-    params.set("page", page);
-    return `/results?${params.toString()}`;
-  };
 
   return (
     <>
       {/* Grid Layout */}
       <div className="results_grid mb-8">
-        {listings.map((listing) => (
-          <Listing_card_results key={listing._id} listing={listing} />
+        {listings.map((listing, index) => (
+          <Listing_card_results 
+            key={listing._id} 
+            listing={listing} 
+            isSaved={wishlistId_s.includes(listing._id)}
+            // Add structured data position for SEO
+            position={index + 1}
+          />
         ))}
       </div>
 
-      {/* MUI Pagination */}
+      {/* MUI Pagination - Converted to server-side navigation */}
       {pagination.totalPages > 1 && (
         <div className="flex justify-center border-t border-gray-200 pt-6">
           <Stack spacing={2}>
@@ -44,9 +47,22 @@ const ListingsGrid = ({ listings, pagination, searchParams, hasError }) => {
               color="primary"
               showFirstButton
               showLastButton
-              onChange={(e, value) => {
-                window.location.href = generatePageUrl(value);
-              }}
+              // Use Link component for server-side navigation
+              renderItem={(item) => (
+                <Link 
+                  href={generatePageUrl(item.page, searchParams)}
+                  className={`MuiPaginationItem-root MuiPaginationItem-outlined ${
+                    item.page === pagination.currentPage 
+                      ? 'Mui-selected' 
+                      : ''
+                  }`}
+                >
+                  {item.type === 'page' ? item.page : 
+                   item.type === 'first' ? '«' :
+                   item.type === 'last' ? '»' :
+                   item.type === 'previous' ? '‹' : '›'}
+                </Link>
+              )}
             />
           </Stack>
         </div>
@@ -54,6 +70,5 @@ const ListingsGrid = ({ listings, pagination, searchParams, hasError }) => {
     </>
   );
 };
-
 
 export default ListingsGrid;

@@ -1,15 +1,17 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { Check, Scale } from "lucide-react";
+import { Check, MapPinIcon, Scale } from "lucide-react";
 import WishlistButton from "../components/WishlistButton";
 import { inter } from "@/utils/fonts";
 import Sqftsvg from "../svg/Sqftsvg";
 import Bathsvg from "../svg/Bathsvg";
 import BedSvg from "../svg/BedSvg";
 import LocationSvg from "../svg/LocationSvg";
-import { getCoverImage, formatPrice, getLocationString, getPricePeriod, ModernTag, PropertyForTag, PropertyTypeBadge } from "@/utils/cardhelpers"
+import { getCoverImage, formatPrice, getLocationString, getPricePeriod } from "@/utils/helpers/listing-helpers";
+import { PropertyForTag, PropertyTypeBadge } from "@/app/components/SideComponents/PropertyTags"
 import { BLUE_PLACEHOLDER } from "@/utils/blueplaceholder";
+import { ModernTag } from "@/app/components/SideComponents/ModernTag";
 
 
 const ListingCard = ({ listing, selectedForCompare, setSelectedForCompare }) => {
@@ -70,36 +72,42 @@ const ListingCard = ({ listing, selectedForCompare, setSelectedForCompare }) => 
 
         {/* Content Section - Same as Homelisting */}
         <div className="content bg-white p-6 pt-4">
-          <div className="flex items-center mb-4">
-            <PropertyTypeBadge
-              propertyType={listing.propertyType?.subType}
-            />
-          </div>
+                         <div className="flex items-center mb-4">
+                    <PropertyTypeBadge
+                        propertyType={listing.propertyType?.subType}
+                    />
+                </div>
 
-          {/* Location */}
-          <p
-            className={`text-[14px] text-[#2c2c2c] mb-3 flex items-center gap-2 ${inter.className}`}
-          >
-            <LocationSvg className="text-blue-600" />
-            {getLocationString(listing.location)}
-          </p>
+                {/* Location with semantic markup */}
+                <p className={`text-[14px] text-[#2c2c2c] flex items-start gap-2 ${inter.className}`}>
+                    <MapPinIcon className="text-blue-600 w-5 h-5" />
+                    <span itemProp="location" itemScope itemType="https://schema.org/Place">
+                        <span className="" itemProp="address" itemScope itemType="https://schema.org/PostalAddress">
+                            <span itemProp="addressLocality">{listing.location?.city}</span>
+                            {listing.location?.state && <span>, <span itemProp="addressRegion">{listing.location.state}</span></span>}
+                        </span>
+                    </span>
+                </p>
 
-          {/* Title */}
-          <h3
-            className={`${inter.className} mb-3 text-[18px] font-[700] text-[#1a1a1a] line-clamp-2 min-h-[56px] group-hover:text-blue-700 transition-colors duration-200`}
-          >
-            {listing.title || "No Title"}
-          </h3>
+                {/* Title with h3 for proper heading hierarchy */}
+                <div className="mt-[30px]">
+                    <h3 className={`${inter.className} mb-3 text-[18px] font-[700] text-[#1a1a1a] line-clamp-2  group-hover:text-blue-700 transition-colors duration-200`}>
+                        <span itemProp="name">{listing.title || "No Title"}</span>
+                    </h3>
 
-          {/* Price */}
-          <h3
-            className={`${inter.className} mb-4 text-[22px] font-[700] text-[#1D4ED8] max-[300px]:text-[18px]`}
-          >
-            {formatPrice(listing.price)}
-            <span className="text-[14px] font-[600] text-[#2c2c2c] ml-1">
-              {getPricePeriod(listing.propertyFor || listing.listingType, listing.price?.priceType)}
-            </span>
-          </h3>
+                    {/* Price with semantic markup */}
+                    <div className={`${inter.className} mb-4 text-[22px] font-[700] text-[#1D4ED8] max-[300px]:text-[18px]`}>
+                        <span itemProp="offers" itemScope itemType="https://schema.org/Offer">
+                            <span itemProp="price" content={listing.price?.amount}>
+                                {formatPrice(listing.price)}
+                            </span>
+                            <meta itemProp="priceCurrency" content={listing.price?.currency || 'USD'} />
+                            <span className="text-[14px] font-[600] text-[#2c2c2c] ml-1">
+                                {getPricePeriod(listing.propertyFor, listing.price?.priceType)}
+                            </span>
+                        </span>
+                    </div>
+                </div>
 
           {/* Property Features */}
           <div className="flex flex-wrap items-center gap-4 py-4 border-t border-gray-100">

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import CustomToast from "./SideComponents/CustomToast";
+import CustomLoader from "./CustomLoader";
 export default function WishlistButton({ listingId, isInitiallySaved = false }) {
     const [isSaved, setIsSaved] = useState(isInitiallySaved);
     const [loading, setLoading] = useState(false);
@@ -16,7 +17,7 @@ export default function WishlistButton({ listingId, isInitiallySaved = false }) 
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/saveToList`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                credentials: "include", // ✅ allows backend cookie to be sent automatically
+                credentials: "include",
                 body: JSON.stringify({ listingId }),
             });
 
@@ -41,16 +42,19 @@ export default function WishlistButton({ listingId, isInitiallySaved = false }) 
     };
 
     return (
-        <button
-            onClick={handleSaveListing}
-            disabled={loading}
-            className="absolute right-3 bottom-3 bg-white/90 rounded-full p-2 shadow-sm hover:bg-white transition"
-            aria-label="Save to wishlist"
-        >
-            <Heart
-                className={`w-5 h-5 transition-colors duration-300 ${isSaved ? "fill-red-500 text-red-500" : "text-gray-600"
-                    }`}
-            />
-        </button>
+        <>
+            <button
+                onClick={handleSaveListing}
+                disabled={loading}
+                className="absolute right-3 bottom-3 bg-white/90 rounded-full p-2 shadow-sm hover:bg-white transition"
+                aria-label="Save to wishlist"
+            >
+                <Heart
+                    className={`w-5 h-5 transition-colors duration-300 ${isSaved ? "fill-red-500 text-red-500" : "text-gray-600"
+                        }`}
+                />
+            </button>
+            {loading && <CustomLoader />}
+        </>
     );
 }

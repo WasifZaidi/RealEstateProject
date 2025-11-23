@@ -46,9 +46,12 @@ export function buildSearchParams(params) {
 /**
  * Enhanced fetch function for listings with better error handling
  */
+// Enhanced api_utils.js
+/**
+ * Enhanced fetch function for listings with sorting support
+ */
 export async function fetchListings(searchParams) {
   const params = buildSearchParams(searchParams);
-  const queryString = params.toString();
   
   // Add default parameters if needed
   if (!searchParams.page) {
@@ -62,7 +65,7 @@ export async function fetchListings(searchParams) {
   
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     const response = await fetch(apiUrl, {
       method: 'GET',
@@ -80,7 +83,6 @@ export async function fetchListings(searchParams) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      // Handle different HTTP status codes
       if (response.status === 404) {
         throw new Error('Listings not found');
       } else if (response.status === 500) {
@@ -92,7 +94,6 @@ export async function fetchListings(searchParams) {
 
     const data = await response.json();
     
-    // Validate response structure
     if (!data || typeof data !== 'object') {
       throw new Error('Invalid response format');
     }
@@ -106,7 +107,6 @@ export async function fetchListings(searchParams) {
       timestamp: new Date().toISOString()
     });
 
-    // Return structured error response
     return { 
       success: false, 
       data: { 
@@ -128,4 +128,19 @@ export async function fetchListings(searchParams) {
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     };
   }
+}
+
+/**
+ * Helper function to get sort display name
+ */
+export function getSortDisplayName(sortValue) {
+  const sortMap = {
+    'recommended': 'Recommended',
+    'price-low-high': 'Price: Low to High',
+    'price-high-low': 'Price: High to Low',
+    'newest': 'Newest Listings',
+    'oldest': 'Oldest Listings'
+  };
+  
+  return sortMap[sortValue] || 'Recommended';
 }

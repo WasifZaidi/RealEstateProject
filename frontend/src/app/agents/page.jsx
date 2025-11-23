@@ -19,7 +19,7 @@ export default async function AgentsPage() {
   const agents = await getAgents();
 
   return (
-    <section className="py-24 relative overflow-hidden">
+    <section className="py-14 relative overflow-hidden">
       {/* Decorative Background */}
       <div className="absolute inset-0 opacity-40">
         <div className="absolute top-20 left-10 w-72 h-72 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
@@ -67,9 +67,9 @@ export default async function AgentsPage() {
             };
 
             return (
-              <div key={agent.agentId} className="group relative">
+              <div key={agent.agentId} className="group relative cursor-pointer">
                 {/* Card Container with Enhanced Glass Effect */}
-                <div className="relative bg-white rounded-3xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-blue-100/50 hover:-translate-y-2 border border-gray-300/80">
+                <div className="relative h-full bg-white rounded-3xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-blue-100/50 border border-gray-200/80">
 
                   {/* Enhanced Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-600/0 via-purple-600/0 to-indigo-600/0 rounded-3xl group-hover:from-blue-600/8 group-hover:via-purple-600/5 group-hover:to-indigo-600/8 transition-all duration-500 z-10 pointer-events-none"></div>
@@ -80,7 +80,7 @@ export default async function AgentsPage() {
                       src={leader.image}
                       alt={leader.name}
                       fill
-                      className="object-cover transition-all duration-700 group-hover:scale-105"
+                      className="object-cover transition-all duration-700"
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       priority={index < 2}
                     />
@@ -134,7 +134,7 @@ export default async function AgentsPage() {
                   </div>
 
                   {/* Content Section */}
-                  <div className="relative p-6 bg-gradient-to-b from-white to-gray-50/70">
+                  <div className="relative p-6 bg-gradient-to-b from-white to-gray-200/70 h-full">
                     {/* Name and Role */}
                     <div className="text-center mb-4">
                       <h3 className="text-xl font-bold text-gray-900 mb-2 transition-all duration-300 group-hover:text-blue-600">

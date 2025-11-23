@@ -181,6 +181,7 @@ const PROPERTY_TYPES = {
 };
 const ALL_PROPERTY_TYPES = Object.values(PROPERTY_TYPES).flat();
 
+// Updated filterListingSchema
 const filterListingSchema = Joi.object({
   // Pagination
   page: Joi.number().integer().min(1).default(1),
@@ -230,10 +231,17 @@ const filterListingSchema = Joi.object({
   // Search
   search: Joi.string().trim().max(100),
 
-  // Sorting
+  // Sorting - Enhanced options
   sortBy: Joi.string().valid(
-    'price.amount', 'listedAt', 'views', 'favoritesCount',
-    'details.size', 'details.bedrooms', 'details.bathrooms'
+    'price.amount', 
+    'listedAt', 
+    'views', 
+    'favoritesCount',
+    'details.size', 
+    'details.bedrooms', 
+    'details.bathrooms',
+    'isFeatured', // Added for recommended sorting
+    'isPremium'   // Added for premium priority
   ).default('listedAt'),
   sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
 

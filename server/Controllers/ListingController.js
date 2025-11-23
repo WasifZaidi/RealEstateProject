@@ -389,6 +389,7 @@ exports.getListingById = async (req, res) => {
 
 
 // Get listing by filters
+// Updated Controller with enhanced sorting
 exports.getListingByFilter = async (req, res) => {
   try {
     const {
@@ -413,7 +414,7 @@ exports.getListingByFilter = async (req, res) => {
       neighborhood,
       latitude,
       longitude,
-      radius = 10, // in kilometers
+      radius = 10,
 
       // Advanced filters
       amenities,
@@ -427,7 +428,7 @@ exports.getListingByFilter = async (req, res) => {
       maxParking,
 
       // Status and visibility
-      status = 'pending',
+      status = 'active',
       isFeatured,
       isPremium,
       visibility = 'public',
@@ -456,9 +457,8 @@ exports.getListingByFilter = async (req, res) => {
       savedListingIds = userWishlist.map(w => w.listing.toString());
     }
 
-
     // Status and visibility filters
-    // filter.status = status;
+    filter.status = status;
     filter.visibility = visibility;
 
     // Property type filters
@@ -470,15 +470,12 @@ exports.getListingByFilter = async (req, res) => {
       filter.propertyFor = propertyFor;
     }
 
-
     // Price range filter
     if (minPrice || maxPrice) {
       filter['price.amount'] = {};
       if (minPrice) filter['price.amount'].$gte = parseFloat(minPrice);
       if (maxPrice) filter['price.amount'].$lte = parseFloat(maxPrice);
     }
-
-
 
     // Bedrooms filter
     if (minBedrooms || maxBedrooms) {
@@ -515,7 +512,7 @@ exports.getListingByFilter = async (req, res) => {
             type: 'Point',
             coordinates: [parseFloat(longitude), parseFloat(latitude)]
           },
-          $maxDistance: parseFloat(radius) * 1000 // Convert km to meters
+          $maxDistance: parseFloat(radius) * 1000
         }
       };
     }
@@ -568,38 +565,45 @@ exports.getListingByFilter = async (req, res) => {
       ];
     }
 
-    // Build sort object
-    const sortOptions = {};
+    // Build advanced sort object
+    let sortOptions = {};
     const allowedSortFields = [
       'price.amount', 'listedAt', 'views', 'favoritesCount',
-      'details.size', 'details.bedrooms', 'details.bathrooms'
+      'details.size', 'details.bedrooms', 'details.bathrooms',
+      'isFeatured', 'isPremium'
     ];
 
-    if (allowedSortFields.includes(sortBy)) {
+    // Handle complex sorting scenarios
+    if (sortBy && allowedSortFields.includes(sortBy)) {
       sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      
+      // Add secondary sort for better consistency
+      if (sortBy !== 'listedAt') {
+        sortOptions.listedAt = -1; // Always show newest first as secondary sort
+      }
     } else {
-      sortOptions.listedAt = -1; // Default sort
+      // Default sorting: Recommended (featured + premium first, then by date)
+      sortOptions = {
+        isFeatured: -1,
+        isPremium: -1,
+        listedAt: -1
+      };
     }
 
     // Pagination options
     const pageNum = parseInt(page);
-    const limitNum = Math.min(parseInt(limit), 100); // Max 100 per page
+    const limitNum = Math.min(parseInt(limit), 100);
     const skip = (pageNum - 1) * limitNum;
 
     // Execute query with performance optimization
     const [listings, totalCount, featuredCount] = await Promise.all([
-      // Get paginated listings
       Listing.find(filter)
-        .select('-__v -updatedAt') // Exclude unnecessary fields
+        .select('-__v -updatedAt')
         .sort(sortOptions)
         .skip(skip)
         .limit(limitNum)
-        .lean(), // For better performance
-
-      // Get total count for pagination
+        .lean(),
       Listing.countDocuments(filter),
-
-      // Get featured count for UI purposes
       Listing.countDocuments({ ...filter, isFeatured: true })
     ]);
 
@@ -607,7 +611,6 @@ exports.getListingByFilter = async (req, res) => {
     const totalPages = Math.ceil(totalCount / limitNum);
     const hasNextPage = pageNum < totalPages;
     const hasPrevPage = pageNum > 1;
-
 
     const listingsDataComplete = listings.map(listing => ({
       ...listing,
@@ -629,7 +632,11 @@ exports.getListingByFilter = async (req, res) => {
         },
         metadata: {
           featuredCount,
-          returnedCount: listings.length
+          returnedCount: listings.length,
+          sort: {
+            by: sortBy,
+            order: sortOrder
+          }
         }
       },
       message: listings.length > 0 ? 'Listings retrieved successfully' : 'No listings found'
@@ -637,7 +644,7 @@ exports.getListingByFilter = async (req, res) => {
 
     // Cache control headers for performance
     res.set({
-      'Cache-Control': 'public, max-age=300', // 5 minutes cache
+      'Cache-Control': 'public, max-age=300',
       'X-Total-Count': totalCount,
       'X-Page-Count': totalPages
     });
@@ -645,7 +652,6 @@ exports.getListingByFilter = async (req, res) => {
     return res.status(200).json(response);
 
   } catch (error) {
-    // Log error for monitoring
     console.error('GetListingByFilter Error:', {
       error: error.message,
       stack: error.stack,
@@ -653,7 +659,6 @@ exports.getListingByFilter = async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    // Different error responses based on error type
     if (error.name === 'CastError') {
       return res.status(400).json({
         success: false,
@@ -743,7 +748,6 @@ exports.getHomePageListings = async (req, res) => {
       });
     }
 
-    console.log(listings)
 
     // Respond with data
     return res.status(200).json({

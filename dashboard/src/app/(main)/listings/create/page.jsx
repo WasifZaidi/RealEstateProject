@@ -819,7 +819,7 @@ const Page = () => {
                                     <MuiDropdown
                                         options={[
                                             { label: "Sell", value: "Sell" },
-                                            { label: "Rent", value: "Rent" }
+                                            { label: "Rent", value: "Rent" },
                                         ]}
                                         ref={inputRefs.propertyFor}
                                         value={propertyFor}

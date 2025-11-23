@@ -1,10 +1,12 @@
 import React from 'react';
 import { Metadata } from 'next';
-import FilterSection from '..//components/FilterSection';
+import FilterSection from '../components/FilterSection';
 import ListingsGrid from '../components/ListingGrid';
 import { fetchListings } from '../../lib/api_utils';
+import { getWishlistMinimal } from '../../lib/wishlist_utils';
 import ResultsSorting from '../components/SideComponents/ResultsSorting';
 import { redirect } from "next/navigation";
+
 // Generate metadata for SEO
 export async function generateMetadata({ searchParams }) {
   const seoTitle = generateSEOTitle(searchParams);
@@ -74,11 +76,12 @@ function generateSEODescription(params) {
 
 // Main page component
 export default async function ResultsPage({ searchParams }) {
-    if (!searchParams?.state || searchParams.state.trim() === "") {
-    redirect("/"); // Next.js SSR-friendly redirect
+  if (!searchParams?.state || searchParams.state.trim() === "") {
+    redirect("/");
   }
+  
   const listingsData = await fetchListings(searchParams)
-
+  const wishlistId_s = await getWishlistMinimal();
   const {
     listings = [],
     pagination = {},
@@ -87,6 +90,21 @@ export default async function ResultsPage({ searchParams }) {
 
   const hasError = !listingsData.success;
   const totalResults = pagination.totalCount || 0;
+
+  // Generate results summary text
+  const generateResultsSummary = () => {
+    const baseText = `Showing ${listings.length} of ${totalResults} properties`;
+    const locationParts = [];
+    
+    if (searchParams?.city) locationParts.push(searchParams.city);
+    if (searchParams?.state) locationParts.push(searchParams.state);
+    
+    if (locationParts.length > 0) {
+      return `${baseText} in ${locationParts.join(', ')}`;
+    }
+    
+    return `${baseText} in your area`;
+  };
 
   // Generate structured data for SEO
   const structuredData = {
@@ -121,25 +139,24 @@ export default async function ResultsPage({ searchParams }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-
       <div className="min-h-screen bg-gray-50">
-        {/* Top Filter Bar */}
         <FilterSection />
-
-        {/* Main Content */}
         <div className="container mx-auto px-4 py-6">
-          {/* Results Summary */}
           <div className="flex flex-wrap gap-y-[26px] items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Properties for Sale</h1>
-              <p className="text-gray-600 mt-1">Showing 1,243 properties in your area</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {searchParams?.propertyFor === 'rent' ? 'Properties for Rent' : 
+                 searchParams?.propertyFor === 'lease' ? 'Properties for Lease' : 
+                 'Properties for Sale'}
+              </h1>
+              <p className="text-gray-600 mt-1">{generateResultsSummary()}</p>
             </div>
-            <ResultsSorting/>
+            <ResultsSorting searchParams={searchParams} />
           </div>
 
-          {/* Listings Grid */}
           <ListingsGrid
             listings={listings}
+            wishlistId_s={wishlistId_s}
             pagination={pagination}
             searchParams={searchParams}
             hasError={hasError}

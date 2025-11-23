@@ -189,3 +189,35 @@ exports.getListingsForCompare = async (req, res) => {
     });
   }
 };
+
+exports.getWishlistMinimal = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized user",
+      });
+    }
+
+    const wishlist = await Wishlist.findOne(
+      { user: userId },
+      { "listings.listing": 1, _id: 0 }
+    );
+
+    return res.status(200).json({
+      success: true,
+      savedListingIds: wishlist
+        ? wishlist.listings.map(item => item.listing.toString())
+        : [],
+    });
+
+  } catch (error) {
+    console.error("❌ Wishlist Minimal Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching wishlist status.",
+    });
+  }
+};

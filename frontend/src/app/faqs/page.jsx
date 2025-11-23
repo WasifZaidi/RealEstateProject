@@ -124,7 +124,7 @@ const FAQPage = () => {
                 placeholder="Search questions..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-6 py-4 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 placeholder-gray-500 shadow-lg hover:shadow-xl"
+                className="normal_input pl_medium"
               />
               {searchTerm && (
                 <button
@@ -145,7 +145,7 @@ const FAQPage = () => {
                 <div key={categoryIndex} className="group">
                   {/* Category Header */}
                   <div className="flex items-center gap-4 mb-6">
-                    <div className={`p-3 rounded-2xl ${category.bgColor} transition-all duration-300 group-hover:scale-110`}>
+                    <div className={`p-3 rounded-[50px] ${category.bgColor} transition-all duration-300 group-hover:scale-110`}>
                       <IconComponent className={`w-6 h-6 ${category.iconColor}`} />
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900">{category.title}</h2>
@@ -161,7 +161,7 @@ const FAQPage = () => {
                       return (
                         <div
                           key={questionIndex}
-                          className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl transition-all duration-300 hover:shadow-lg overflow-hidden group/question hover:border-gray-300"
+                          className="bg-white/80 backdrop-blur-sm border border-gray-200 transition-all duration-300 hover:shadow-lg overflow-hidden group/question hover:border-gray-500"
                         >
                           <button
                             onClick={() => toggleQuestion(globalIndex)}
