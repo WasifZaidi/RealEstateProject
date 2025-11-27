@@ -6,8 +6,9 @@ import MuiDropdown from "@/app/components/MuiDropdown";
 import CustomToast from "@/app/components/CustomToast";
 import { useRef } from "react";
 import { uploadListing } from "@/utils/api";
-import {propertyTypes} from "@/app/constants/propertyTypes"
-import {amenities} from "@/app/constants/amenities"
+import { propertyTypes } from "@/app/constants/propertyTypes"
+import { amenities } from "@/app/constants/amenities"
+import PropertyCoordinates from "@/app/components/PropertyCoordinates";
 const Page = () => {
     const [activeTab, setActiveTab] = useState("Residential");
     const [currentStep, setCurrentStep] = useState(1)
@@ -33,6 +34,9 @@ const Page = () => {
     const [agent, setagent] = useState("xyz agent")
     const [errors, setErrors] = useState({})
     const [toast, setToast] = useState(null);
+
+    const [coordinates, setCoordinates] = useState(null);
+    const [address, setAddress] = useState('');
     // Amenities data
     const amenities = [
         // Living Features
@@ -536,6 +540,9 @@ const Page = () => {
             if (!city) errors.city = "City is required";
             if (!size) errors.size = "Property size is required";
             if (!price) errors.price = "Asking price is required";
+            if (!coordinates) {
+                newErrors.coordinates = 'Please set property coordinates for better visibility';
+            }
             return errors;
         },
         3: () => {
@@ -644,6 +651,8 @@ const Page = () => {
                 propertyFor,
                 state,
                 city,
+                coordinates,
+                address,
                 size,
                 price,
                 priceType,
@@ -692,27 +701,26 @@ const Page = () => {
                     {/* Main Card */}
                     <div className="section rounded-3xl bg-white shadow-xl border border-gray-200 p-8 transition-all duration-300 hover:shadow-2xl">
                         {/* Tabs */}
-                     <div className="overflow-x-auto flex space-x-1 bg-gray-100 rounded-2xl p-2 mb-8 mx-auto">
-  {Object.keys(propertyTypes).map((tab) => (
-    <button
-      key={tab}
-      onClick={() => { setActiveTab(tab); setSelectedProperty(""); }}
-      className={`flex-1 min-w-[150px] cursor-pointer py-4 px-6 rounded-[50px] font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
-        activeTab === tab
-          ? "bg-blue-600 text-white shadow-md"
-          : "text-gray-600 hover:text-gray-900 hover:bg-white"
-      }`}
-    >
-      <span className="flex-shrink-0">
-        {tab === "Residential" && <FaHome />}
-        {tab === "Plot" && <FaTree />}
-        {tab === "Commercial" && <FaBuilding />}
-        {tab === "Industrial" && <FaIndustry />}
-      </span>
-      {tab}
-    </button>
-  ))}
-</div>
+                        <div className="overflow-x-auto flex space-x-1 bg-gray-100 rounded-2xl p-2 mb-8 mx-auto">
+                            {Object.keys(propertyTypes).map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => { setActiveTab(tab); setSelectedProperty(""); }}
+                                    className={`flex-1 min-w-[150px] cursor-pointer py-4 px-6 rounded-[50px] font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === tab
+                                            ? "bg-blue-600 text-white shadow-md"
+                                            : "text-gray-600 hover:text-gray-900 hover:bg-white"
+                                        }`}
+                                >
+                                    <span className="flex-shrink-0">
+                                        {tab === "Residential" && <FaHome />}
+                                        {tab === "Plot" && <FaTree />}
+                                        {tab === "Commercial" && <FaBuilding />}
+                                        {tab === "Industrial" && <FaIndustry />}
+                                    </span>
+                                    {tab}
+                                </button>
+                            ))}
+                        </div>
 
                         {/* Property Grid */}
                         <div className="mb-8">
@@ -892,6 +900,17 @@ const Page = () => {
                                                 {errors.city}
                                             </p>
                                         )}
+                                    </div>
+
+                                    <div className="space-y-4 pt-6 border-t border-gray-200">
+                                        <PropertyCoordinates
+                                            coordinates={coordinates}
+                                            setCoordinates={setCoordinates}
+                                            address={address}
+                                            setAddress={setAddress}
+                                            errors={errors}
+                                            setErrors={setErrors}
+                                        />
                                     </div>
                                 </div>
                             </div>

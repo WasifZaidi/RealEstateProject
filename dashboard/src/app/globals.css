@@ -100,3 +100,31 @@ body {
 .normal_input.mod_2{
   padding-left: 40px;
 }
+
+
+/* Fix for Leaflet map container */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 0 0 1rem 1rem;
+}
+
+/* Custom marker styles */
+.leaflet-marker-icon {
+  margin-left: -12px !important;
+  margin-top: -41px !important;
+}
+
+/* Popup styles */
+.leaflet-popup-content {
+  margin: 12px 15px;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+}
+
+.black_overlay{
+  background-color: rgba(0,0,0.5);
+}
+
