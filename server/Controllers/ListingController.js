@@ -6,6 +6,7 @@ const Meeting = require("../Model/Meeting")
 const cloudinary = require("../utils/cloudinary");
 const { v4: uuidv4 } = require("uuid")
 const FileCleanupManager = require("../utils/fileCleanup");
+const geocodeAddress = require("../utils/geocoding")
 const safeParse = (val, fallback = null) => {
   if (typeof val === 'object') return val;
   try {
@@ -116,28 +117,74 @@ exports.createListing = async (req, res) => {
     details.lotSize = numericFields.detailsLotSize;
     details.parkingSpaces = numericFields.detailsParkingSpaces;
 
-    // 🗺️ Enhanced GeoJSON validation
     if (location) {
+      // Case 1: Direct lat/lng provided
       if (location.lat != null && location.lng != null) {
         if (!validateCoordinates(location.lat, location.lng)) {
-          throw new Error('VALIDATION_ERROR: Invalid coordinates provided');
+          throw new Error('VALIDATION_ERROR: Invalid coordinates provided. Latitude must be between -90 and 90, longitude between -180 and 180.');
         }
+
+        const sanitizedCoords = sanitizeCoordinates(location.lat, location.lng);
         location.coordinates = {
           type: "Point",
-          coordinates: [Number(location.lng), Number(location.lat)],
+          coordinates: [sanitizedCoords.lng, sanitizedCoords.lat], // GeoJSON format: [lng, lat]
         };
-      } else if (location.coordinates && Array.isArray(location.coordinates.coordinates)) {
+
+        // Remove individual lat/lng to avoid duplication
+        delete location.lat;
+        delete location.lng;
+      }
+      // Case 2: Coordinates object provided
+      else if (location.coordinates && Array.isArray(location.coordinates.coordinates)) {
         const [lng, lat] = location.coordinates.coordinates;
         if (!validateCoordinates(lat, lng)) {
-          throw new Error('VALIDATION_ERROR: Invalid coordinates format');
+          throw new Error('VALIDATION_ERROR: Invalid coordinates format in coordinates object');
         }
-        location.coordinates.type = "Point";
-      } else {
+
+        const sanitizedCoords = sanitizeCoordinates(lat, lng);
         location.coordinates = {
           type: "Point",
-          coordinates: [0, 0],
+          coordinates: [sanitizedCoords.lng, sanitizedCoords.lat],
         };
       }
+      // Case 3: No coordinates provided - geocode from address
+      else if (location.address) {
+        try {
+          // Implement geocoding service here
+          const geocodedCoords = await geocodeAddress(location.address);
+          if (geocodedCoords) {
+            location.coordinates = {
+              type: "Point",
+              coordinates: [geocodedCoords.lng, geocodedCoords.lat],
+            };
+          } else {
+            // Fallback to default coordinates or throw error
+            location.coordinates = {
+              type: "Point",
+              coordinates: [0, 0], // Or handle as needed
+            };
+            console.warn('Geocoding failed for address:', location.address);
+          }
+        } catch (geocodeError) {
+          console.error('Geocoding error:', geocodeError);
+          location.coordinates = {
+            type: "Point",
+            coordinates: [0, 0],
+          };
+        }
+      }
+      // Case 4: No location data at all
+      else {
+        location.coordinates = {
+          type: "Point",
+          coordinates: [0, 0], // Default coordinates
+        };
+      }
+    }
+
+    // Add address to location if provided
+    if (location.address) {
+      location.formattedAddress = location.address;
     }
 
     // ✅ Enhanced required field validation
@@ -576,7 +623,7 @@ exports.getListingByFilter = async (req, res) => {
     // Handle complex sorting scenarios
     if (sortBy && allowedSortFields.includes(sortBy)) {
       sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
-      
+
       // Add secondary sort for better consistency
       if (sortBy !== 'listedAt') {
         sortOptions.listedAt = -1; // Always show newest first as secondary sort

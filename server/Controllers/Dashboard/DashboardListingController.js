@@ -440,4 +440,21 @@ exports.deleteListing = async (req, res) => {
   }
 };
 
+exports.deleteAllListings = async (req, res) => {
+  try {
+    const result = await Listing.deleteMany({});
+    return res.status(200).json({
+      success: true,
+      message: `All listings deleted successfully.`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error("❌ Error deleting all listings:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error while deleting listings.",
+      error: error.message,
+    });
+  }
+};
 

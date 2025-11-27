@@ -1,7 +1,7 @@
 const express = require("express");
 const { isAuthenticated, authorizeRoles } = require('../../middelware/auth');
 const {getAgentListings} = require("../../Controllers/ListingController")
-const {getListingById, updateListing, deleteListing} = require("../../Controllers/Dashboard/DashboardListingController")
+const {getListingById, updateListing, deleteListing, deleteAllListings} = require("../../Controllers/Dashboard/DashboardListingController")
 const validateRequest = require("../../middelware/validation/validateRequest")
 const { upload } = require("../../middelware/upload")
 const router = express();
@@ -37,4 +37,5 @@ router.post(
   updateListing 
 );
 router.delete("/dashboard/listing/:listingId", isAuthenticated("access_token_realEstate"), authorizeRoles("admin", "manager", "agent"), deleteListing)
+router.delete("/dashboard/deleteAllListings", deleteAllListings)
 module.exports = router

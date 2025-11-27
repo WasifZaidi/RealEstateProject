@@ -31,16 +31,10 @@ const mediaSchema = new Schema({
 
 // Location Sub-schema
 const locationSchema = new Schema({
-  state: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  city: {
-    type: String,
-    required: true,
-    trim: true
-  },
+  state: { type: String, required: true, trim: true },
+  city: { type: String, required: true, trim: true },
+  address: { type: String, trim: true },
+  formattedAddress: { type: String, trim: true },
   coordinates: {
     type: {
       type: String,
@@ -48,12 +42,19 @@ const locationSchema = new Schema({
       default: 'Point'
     },
     coordinates: {
-      type: [Number], // [longitude, latitude]
-      index: '2dsphere'
+      type: [Number],
+      index: '2dsphere',
+      validate: {
+        validator: function (coords) {
+          return coords.length === 2 &&
+            coords[0] >= -180 && coords[0] <= 180 &&
+            coords[1] >= -90 && coords[1] <= 90;
+        },
+        message: 'Invalid coordinates. Longitude must be between -180 and 180, latitude between -90 and 90.'
+      }
     }
   },
-  zipCode: String,
-  neighborhood: String
+  neighborhood: { type: String, required: true },
 });
 
 // Pricing Sub-schema
@@ -97,10 +98,18 @@ const propertyDetailsSchema = new Schema({
     max: 50
   },
   yearBuilt: Number,
+
   floors: {
     type: Number,
-    min: 1,
-    default: 1
+    min: 0,
+    default: 1,
+    set: function (value) {
+      // If property is a plot → floors must be 0
+      if (this.propertyType?.category === "Plot") {
+        return 0;
+      }
+      return value ?? 1;
+    }
   },
   lotSize: Number, // for plots and houses
   parkingSpaces: {
@@ -157,6 +166,13 @@ const listingSchema = new Schema({
   location: {
     type: locationSchema,
     required: true
+  },
+
+  locationScore: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
   },
 
   // Pricing
@@ -223,7 +239,7 @@ const listingSchema = new Schema({
   agentId: {
     type: String,
     required: true,
-    index: true, 
+    index: true,
   },
   contactInfo: {
     name: String,
@@ -256,6 +272,13 @@ const listingSchema = new Schema({
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
+});
+
+listingSchema.index({
+  "location.state": 1,
+  "location.city": 1,
+  "location.neighborhood": 1,
+  "location.coordinates": "2dsphere"
 });
 
 
