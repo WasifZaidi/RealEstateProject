@@ -145,3 +145,20 @@ body {
     transform: rotate(360deg);
   }
 }
+
+
+/* Add to your global CSS file */
+@keyframes slide-up_panel {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up-panel {
+  animation: slide-up_panel 0.3s ease-in-out;
+}

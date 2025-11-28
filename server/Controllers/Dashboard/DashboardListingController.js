@@ -96,6 +96,7 @@ const sanitizeInput = (input) => {
 };
 
 exports.updateListing = async (req, res) => {
+  console.log('rawbo')
   const session = await Listing.startSession();
   session.startTransaction();
 
@@ -132,6 +133,7 @@ exports.updateListing = async (req, res) => {
     const isFeatured = sanitizedBody.isFeatured;
 
     if (location) {
+      console.log(location)
       if (location.lat != null && location.lng != null) {
         if (!validateCoordinates(location.lat, location.lng)) {
           throw new Error('VALIDATION_ERROR: Invalid coordinates provided.');
@@ -155,6 +157,8 @@ exports.updateListing = async (req, res) => {
 
       if (location.address) location.formattedAddress = location.address;
     }
+
+    console.log("location2:", location)
 
 
     // Media-specific data - FIXED: Proper parsing

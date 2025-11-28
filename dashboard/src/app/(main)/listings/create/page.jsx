@@ -531,6 +531,10 @@ const Page = () => {
     const validators = {
         1: () => {
             let errors = {};
+             if (!selectedProperty || selectedProperty.trim() === "") {
+            errors.selectedProperty = "Please select a property type";
+        }
+        
             return errors;
         },
         2: () => {
@@ -541,7 +545,7 @@ const Page = () => {
             if (!size) errors.size = "Property size is required";
             if (!price) errors.price = "Asking price is required";
             if (!coordinates) {
-                newErrors.coordinates = 'Please set property coordinates for better visibility';
+                errors.coordinates = 'Please set property coordinates for better visibility';
             }
             return errors;
         },
@@ -613,8 +617,25 @@ const Page = () => {
         } else if (currentStep === 4) {
             handleSubmit(); // ✅ call submit when step 4 is reached
         }
+    };
 
-
+    const handleContinueByStep = (step) => {
+        const validator = validators[currentStep];
+        const newErrors = validator ? validator() : {};
+        setErrors(newErrors);
+        if (Object.keys(newErrors).length > 0) {
+            const firstErrorKey = Object.keys(newErrors)[0];
+            const fieldRef = inputRefs[firstErrorKey];
+            if (fieldRef?.current) {
+                fieldRef.current.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                });
+                fieldRef.current.focus();
+            }
+            return;
+        }
+        setCurrentStep(step)
     };
 
 
@@ -701,6 +722,39 @@ const Page = () => {
                     </div>
                     {/* Main Card */}
                     <div className="section rounded-3xl bg-white shadow-xl border border-gray-200 p-8 transition-all duration-300 hover:shadow-2xl">
+                        <div className="flex items-center justify-between mb-8">
+                            {/* Step Indicator */}
+                            <div className="flex items-center gap-3 bg-white shadow-sm px-5 py-2 rounded-full border border-gray-200">
+                                <span className="text-sm font-medium text-gray-700">
+                                    Step {currentStep} of 4
+                                </span>
+
+                                <div className="flex gap-2">
+                                    {[1, 2, 3, 4].map(step => (
+                                        <button
+                                            key={step}
+                                            className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer
+          ${step === currentStep ? "bg-blue-600 scale-125" : ""}
+          ${step < currentStep ? "bg-green-500" : ""}
+          ${step > currentStep ? "bg-gray-300" : ""}
+          hover:scale-150`}
+                                            onClick={() => handleContinueByStep(step)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                        </div>
+
+                   {errors.selectedProperty && (
+  <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-[20px]">
+            <p className="text-red-700 text-sm font-[500] flex items-center gap-2">
+              {errors.selectedProperty}
+            </p>
+          </div>
+)}
+
+
                         {/* Tabs */}
                         <div className="overflow-x-auto flex space-x-1 bg-gray-100 rounded-2xl p-2 mb-8 mx-auto">
                             {Object.keys(propertyTypes).map((tab) => (
@@ -765,16 +819,6 @@ const Page = () => {
                                 </div>
                             </div>
                         )}
-
-                        {/* Step Indicator */}
-                        <div className="flex items-center justify-center gap-2">
-                            <div className="flex gap-1">
-                                {[1, 2, 3, 4].map(step => (
-                                    <div key={step} className={`w-2 h-2 rounded-full transition-all ${step === 1 ? "bg-blue-600 w-8" : "bg-gray-300"}`} />
-                                ))}
-                            </div>
-                            <span className="text-sm text-gray-500 ml-2">Step 1 of 4</span>
-                        </div>
                     </div>
                 </div>
             )}
@@ -797,21 +841,28 @@ const Page = () => {
                         {/* Progress Header */}
                         <div className="flex items-center justify-between mb-8">
                             {/* Step Indicator */}
-                            <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
-                                <span className="text-sm text-gray-600">Step 2 of 4</span>
-                                <div className="flex gap-1">
-                                    {[1, 2, 3, 4].map((step) => (
-                                        <div
-                                            key={step}
-                                            className={`w-2 h-2 rounded-full transition-all ${step === currentStep
-                                                ? "bg-blue-600 scale-125"
-                                                : step < currentStep
-                                                    ? "bg-green-500"
-                                                    : "bg-gray-300"
-                                                }`}
-                                        />
-                                    ))}
+                            <div className="flex items-center justify-between mb-8">
+                                {/* Step Indicator */}
+                                <div className="flex items-center gap-3 bg-white shadow-sm px-5 py-2 rounded-full border border-gray-200">
+                                    <span className="text-sm font-medium text-gray-700">
+                                        Step {currentStep} of 4
+                                    </span>
+
+                                    <div className="flex gap-2">
+                                        {[1, 2, 3, 4].map(step => (
+                                            <button
+                                                key={step}
+                                                className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer
+          ${step === currentStep ? "bg-blue-600 scale-125" : ""}
+          ${step < currentStep ? "bg-green-500" : ""}
+          ${step > currentStep ? "bg-gray-300" : ""}
+          hover:scale-150`}
+                                                onClick={() => handleContinueByStep(step)}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
+
                             </div>
                         </div>
 
@@ -1108,33 +1159,27 @@ const Page = () => {
                     <div className="section rounded-3xl bg-white shadow-xl border border-gray-200 p-8 transition-all duration-300 hover:shadow-2xl">
                         {/* Progress Header */}
                         <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-3">
-                                <div className="p-3 rounded-full bg-blue-100">
-                                    <FaImages className="text-blue-600 text-xl" />
-                                </div>
-                                <div>
-                                    <span className="text-sm text-gray-500 font-medium">Step 3 • Property Visuals</span>
-                                    <h3 className="font-semibold text-gray-900">Create an engaging gallery</h3>
-                                </div>
-                            </div>
-
                             {/* Step Indicator */}
-                            <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
-                                <span className="text-sm text-gray-600">Step 3 of 4</span>
-                                <div className="flex gap-1">
-                                    {[1, 2, 3, 4].map((step) => (
-                                        <div
+                            <div className="flex items-center gap-3 bg-white shadow-sm px-5 py-2 rounded-full border border-gray-200">
+                                <span className="text-sm font-medium text-gray-700">
+                                    Step {currentStep} of 4
+                                </span>
+
+                                <div className="flex gap-2">
+                                    {[1, 2, 3, 4].map(step => (
+                                        <button
                                             key={step}
-                                            className={`w-2 h-2 rounded-full transition-all ${step === currentStep
-                                                ? "bg-blue-600 scale-125"
-                                                : step < currentStep
-                                                    ? "bg-green-500"
-                                                    : "bg-gray-300"
-                                                }`}
+                                            className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer
+          ${step === currentStep ? "bg-blue-600 scale-125" : ""}
+          ${step < currentStep ? "bg-green-500" : ""}
+          ${step > currentStep ? "bg-gray-300" : ""}
+          hover:scale-150`}
+                                            onClick={() => handleContinueByStep(step)}
                                         />
                                     ))}
                                 </div>
                             </div>
+
                         </div>
 
                         {/* Upload Area */}
@@ -1298,22 +1343,26 @@ const Page = () => {
                             {/* Progress Header */}
                             <div className="flex items-center justify-between mb-8">
                                 {/* Step Indicator */}
-                                <div className="flex items-center gap-2 bg-gray-100 border-2 border-gray-200 px-4 py-2 rounded-full">
-                                    <span className="text-sm text-gray-700">Step 4 of 4</span>
-                                    <div className="flex gap-1">
-                                        {[1, 2, 3, 4].map((step) => (
-                                            <div
+                                <div className="flex items-center gap-3 bg-white shadow-sm px-5 py-2 rounded-full border border-gray-200">
+                                    <span className="text-sm font-medium text-gray-700">
+                                        Step {currentStep} of 4
+                                    </span>
+
+                                    <div className="flex gap-2">
+                                        {[1, 2, 3, 4].map(step => (
+                                            <button
                                                 key={step}
-                                                className={`w-2 h-2 rounded-full transition-all ${step === currentStep
-                                                    ? "bg-blue-600 scale-125"
-                                                    : step < currentStep
-                                                        ? "bg-green-500"
-                                                        : "bg-gray-300"
-                                                    }`}
+                                                className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer
+          ${step === currentStep ? "bg-blue-600 scale-125" : ""}
+          ${step < currentStep ? "bg-green-500" : ""}
+          ${step > currentStep ? "bg-gray-300" : ""}
+          hover:scale-150`}
+                                                onClick={() => handleContinueByStep(step)}
                                             />
                                         ))}
                                     </div>
                                 </div>
+
                             </div>
 
                             {/* Form Grid */}
@@ -1522,14 +1571,14 @@ const Page = () => {
                                                 type="button"
                                                 onClick={() => setIsFeatured(!isFeatured)}
                                                 className={`relative cursor-pointer inline-flex items-center h-7 w-14 rounded-full transition-all duration-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 ${isFeatured
-                                                        ? "bg-yellow-500 shadow-lg shadow-yellow-500/30"
-                                                        : "bg-gray-300 group-hover:bg-gray-400 shadow-inner"
+                                                    ? "bg-yellow-500 shadow-lg shadow-yellow-500/30"
+                                                    : "bg-gray-300 group-hover:bg-gray-400 shadow-inner"
                                                     }`}
                                             >
                                                 <span
                                                     className={`inline-block w-5 h-5 transform bg-white rounded-full shadow-lg transition-all duration-400 ${isFeatured
-                                                            ? "translate-x-8 scale-110 shadow-yellow-900/20"
-                                                            : "translate-x-1 scale-100 shadow-gray-900/20"
+                                                        ? "translate-x-8 scale-110 shadow-yellow-900/20"
+                                                        : "translate-x-1 scale-100 shadow-gray-900/20"
                                                         }`}
                                                 />
                                             </button>

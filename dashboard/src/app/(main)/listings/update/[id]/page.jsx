@@ -12,13 +12,10 @@ import { getListing, updateListing } from "@/utils/api";
 import { propertyTypes } from "@/app/constants/propertyTypes"
 import { amenities } from "@/app/constants/amenities"
 import PropertyCoordinates from "@/app/components/PropertyCoordinates";
-// Re-using helper functions from the Create page
-const trimFileName = (name, maxLength = 15) => name.length <= maxLength ? name : name.slice(0, maxLength - 4) + "..." + name.split(".").pop();
 
 const UpdatePage = () => {
   const { id: listingId } = useParams();
   const [initialLoading, setInitialLoading] = useState(true);
-  const [existingMedia, setExistingMedia] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
   const [removedMediaIds, setRemovedMediaIds] = useState([]);
   const [mediaOrder, setMediaOrder] = useState([]);
@@ -214,91 +211,65 @@ const UpdatePage = () => {
     );
   };
 
-  const hasValueChanged = (current, initial, key) => {
-    if (current === undefined || initial === undefined) return false;
-
-    // Handle arrays (amenities)
-    if (Array.isArray(current) && Array.isArray(initial)) {
-      if (current.length !== initial.length) return true;
-      return current.some((item, index) => item !== initial[index]);
-    }
-
-    // Handle objects (coordinates)
-    if (typeof current === 'object' && typeof initial === 'object' && current !== null && initial !== null) {
-      return JSON.stringify(current) !== JSON.stringify(initial);
-    }
-
-    // Handle simple values
-    return current !== initial;
-  };
-
   const hasMediaChanges = () => {
     return newFiles.length > 0 || removedMediaIds.length > 0 ||
       JSON.stringify(mediaOrder) !== JSON.stringify(initialData?.mediaOrder) ||
       coverPhotoIndex !== initialData?.coverPhotoIndex;
   };
 
+  const detectChanges = () => {
+    if (!initialData) return false;
 
-  useEffect(() => {
-    if (!initialData) return;
-
-    const changes = [
-      // Basic info changes
-      hasValueChanged(activeTab, initialData.activeTab, 'activeTab'),
-      hasValueChanged(selectedProperty, initialData.selectedProperty, 'selectedProperty'),
-      hasValueChanged(propertyFor, initialData.propertyFor, 'propertyFor'),
-
-      // Location changes
-      hasValueChanged(state, initialData.state, 'state'),
-      hasValueChanged(city, initialData.city, 'city'),
-      hasValueChanged(address, initialData.address, 'address'),
-      hasValueChanged(coordinates, initialData.coordinates, 'coordinates'),
-
-      // Property details
-      hasValueChanged(propertyName, initialData.propertyName, 'propertyName'),
-      hasValueChanged(description, initialData.description, 'description'),
-      hasValueChanged(bedrooms, initialData.bedrooms, 'bedrooms'),
-      hasValueChanged(bathrooms, initialData.bathrooms, 'bathrooms'),
-      hasValueChanged(size, initialData.size, 'size'),
-
-      // Price changes
-      hasValueChanged(price, initialData.price, 'price'),
-      hasValueChanged(priceType, initialData.priceType, 'priceType'),
-
-      // Features & amenities
-      hasValueChanged(isFeatured, initialData.isFeatured, 'isFeatured'),
-      hasValueChanged(selectedAmenities, initialData.selectedAmenities, 'selectedAmenities'),
-
-      // Media changes
-      hasMediaChanges(),
+    const fieldsToCheck = [
+      "activeTab", "selectedProperty", "propertyFor",
+      "state", "city", "address", "isFeatured",
+      "propertyName", "description", "bedrooms", "bathrooms", "size",
+      "price", "priceType",
+      "isFeatured", "selectedAmenities",
+      "previews", "mediaOrder", "coverPhotoIndex", "coordinates"
     ];
 
-    const hasChanges = changes.some(change => change);
-    setHasUnsavedChanges(hasChanges);
+    return fieldsToCheck.some(field => {
+      const currentValue = eval(field);
+      const initialValue = initialData[field];
 
-    // Show/hide save panel with slight delay for better UX
-    if (hasChanges && !savePanelVisible) {
-      const timer = setTimeout(() => setSavePanelVisible(true), 500);
-      return () => clearTimeout(timer);
-    } else if (!hasChanges && savePanelVisible) {
-      setSavePanelVisible(false);
-    }
+      // Deep compare for arrays/objects
+      if (Array.isArray(currentValue) || typeof currentValue === "object") {
+        return JSON.stringify(currentValue) !== JSON.stringify(initialValue);
+      }
+
+      return currentValue !== initialValue;
+    });
+  };
+
+
+
+  useEffect(() => {
+    if (hasUnsavedChanges) return;
+    const timer = setTimeout(() => {
+      const hasChanges = detectChanges();
+      setHasUnsavedChanges(hasChanges);
+      setSavePanelVisible(hasChanges);
+    }, 300);
+    return () => clearTimeout(timer);
   }, [
-    // All state variables that should trigger change detection
-    activeTab, selectedProperty, propertyFor, state, city, address, coordinates,
-    propertyName, description, bedrooms, bathrooms, size, price, priceType,
-    isFeatured, selectedAmenities, newFiles, removedMediaIds, mediaOrder, coverPhotoIndex,
-    initialData
+    activeTab, selectedProperty, propertyFor,
+    state, city, address,
+    propertyName, isFeatured, description, bedrooms, bathrooms, size,
+    price, priceType,
+    isFeatured, selectedAmenities,
+    previews, mediaOrder, coverPhotoIndex, coordinates, hasUnsavedChanges
   ]);
 
-  const MAX_FILES = 12; // Increased for comprehensive property coverage
-  const MAX_IMAGE_SIZE = 10 * 1024 * 1024;   // 10MB (increased for high-quality photos)
-  const MAX_VIDEO_SIZE = 100 * 1024 * 1024;  // 100MB (for property tours)
+
+
+  const MAX_FILES = 12;
+  const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+  const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
   const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
   const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/mov", "video/avi"];
-  const MIN_IMAGE_WIDTH = 640;  // Minimum width for quality display
-  const MIN_IMAGE_HEIGHT = 480; // Minimum height for quality display
-  const ASPECT_RATIO_TOLERANCE = 0.2; // Allow some flexibility in aspect ratio
+  const MIN_IMAGE_WIDTH = 640;
+  const MIN_IMAGE_HEIGHT = 480;
   const trimFileName = (name, maxLength = 15) => {
     if (name.length <= maxLength) return name;
     const ext = name.split(".").pop();
@@ -551,6 +522,7 @@ const UpdatePage = () => {
     bathrooms: useRef(null),
   };
 
+  
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -583,6 +555,7 @@ const UpdatePage = () => {
           bedrooms,
           bathrooms
         }),
+        isFeatured,
         amenities: JSON.stringify(selectedAmenities),
         owner,
         agent,
@@ -979,45 +952,52 @@ const UpdatePage = () => {
           type={toast.type}
           message={toast.message}
           onClose={() => setToast(null)}
-          duration={3000} // auto close after 3s
+          duration={3000}
         />
       )}
 
       {/* Save Changes Panel */}
-      {savePanelVisible && <div className="fixed bottom-0 z-100 left-0 right-0 bg-white border-t border-gray-200 px-4 py-4 shadow-lg">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div>
-            <h3 className="text-lg font-medium text-gray-900">Unsaved Changes</h3>
-            <p className="text-sm text-gray-500">
-              You have made changes that haven't been saved yet.
-            </p>
+      {savePanelVisible && (
+        <div className="fixed bottom-0 left-0 right-0 z-[100]
+  bg-white border-t border-gray-200
+  px-4 py-4
+  transform transition-all duration-300 ease-in-out
+  shadow-[0_-4px_10px_rgba(0,0,0,0.12)]
+  animate-slide-up-panel">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900">Unsaved Changes</h3>
+              <p className="text-sm text-gray-500">
+                You have made changes that haven't been saved yet.
+              </p>
+            </div>
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className={`
+          inline-flex cursor-pointer items-center px-6 py-3 border border-transparent text-base font-medium rounded-[50px] text-white
+         ${loading
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500'
+                }
+          transition-colors duration-200
+        `}
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </button>
           </div>
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className={`
-        inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-[50px] text-white
-        ${loading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-              }
-        transition-colors duration-200
-      `}
-          >
-            {loading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Saving...
-              </>
-            ) : (
-              'Save Changes'
-            )}
-          </button>
         </div>
-      </div>}
+      )}
 
       {currentStep === 1 && (
         <div className="flex flex-col max-w-6xl w-[95%] mx-auto py-8">
@@ -1028,6 +1008,30 @@ const UpdatePage = () => {
           </div>
           {/* Main Card */}
           <div className="section rounded-3xl bg-white shadow-xl border border-gray-200 p-8 transition-all duration-300 hover:shadow-2xl">
+            <div className="flex items-center justify-between mb-8">
+              {/* Step Indicator */}
+              <div className="flex items-center gap-3 bg-white shadow-sm px-5 py-2 rounded-full border border-gray-200">
+                <span className="text-sm font-medium text-gray-700">
+                  Step {currentStep} of 4
+                </span>
+
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4].map(step => (
+                    <button
+                      key={step}
+                      className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer
+          ${step === currentStep ? "bg-blue-600 scale-125" : ""}
+          ${step < currentStep ? "bg-green-500" : ""}
+          ${step > currentStep ? "bg-gray-300" : ""}
+          hover:scale-150`}
+                      onClick={() => setCurrentStep(step)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
             {/* Tabs */}
             <div className="overflow-x-auto flex space-x-1 bg-gray-100 rounded-2xl p-2 mb-8 mx-auto">
               {Object.keys(propertyTypes).map((tab) => (
@@ -1099,17 +1103,6 @@ const UpdatePage = () => {
                 </div>
               </div>
             )}
-
-
-            {/* Step Indicator */}
-            <div className="flex items-center justify-center gap-2">
-              <div className="flex gap-1">
-                {[1, 2, 3, 4].map(step => (
-                  <div key={step} className={`w-2 h-2 rounded-full transition-all ${step === 1 ? "bg-blue-600 w-8" : "bg-gray-300"}`} />
-                ))}
-              </div>
-              <span className="text-sm text-gray-500 ml-2">Step 1 of 4</span>
-            </div>
           </div>
         </div>
       )}
@@ -1132,22 +1125,26 @@ const UpdatePage = () => {
             {/* Progress Header */}
             <div className="flex items-center justify-between mb-8">
               {/* Step Indicator */}
-              <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
-                <span className="text-sm text-gray-600">Step 2 of 4</span>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4].map((step) => (
-                    <div
+              <div className="flex items-center gap-3 bg-white shadow-sm px-5 py-2 rounded-full border border-gray-200">
+                <span className="text-sm font-medium text-gray-700">
+                  Step {currentStep} of 4
+                </span>
+
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4].map(step => (
+                    <button
                       key={step}
-                      className={`w-2 h-2 rounded-full transition-all ${step === currentStep
-                        ? "bg-blue-600 scale-125"
-                        : step < currentStep
-                          ? "bg-green-500"
-                          : "bg-gray-300"
-                        }`}
+                      className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer
+          ${step === currentStep ? "bg-blue-600 scale-125" : ""}
+          ${step < currentStep ? "bg-green-500" : ""}
+          ${step > currentStep ? "bg-gray-300" : ""}
+          hover:scale-150`}
+                      onClick={() => setCurrentStep(step)}
                     />
                   ))}
                 </div>
               </div>
+
             </div>
 
             {/* Form Grid */}
@@ -1443,32 +1440,28 @@ const UpdatePage = () => {
           <div className="section rounded-3xl bg-white shadow-xl border border-gray-200 p-8 transition-all duration-300 hover:shadow-2xl">
             {/* Progress Header */}
             <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-full bg-blue-100">
-                  <FaImages className="text-blue-600 text-xl" />
-                </div>
-                <div>
-                  <span className="text-sm text-gray-500 font-medium">Step 3 • Property Visuals</span>
-                  <h3 className="font-semibold text-gray-900">Create an engaging gallery</h3>
-                </div>
-              </div>
+              <div className="flex items-center justify-between">
+                {/* Step Indicator */}
+                <div className="flex items-center gap-3 bg-white shadow-sm px-5 py-2 rounded-full border border-gray-200">
+                  <span className="text-sm font-medium text-gray-700">
+                    Step {currentStep} of 4
+                  </span>
 
-              {/* Step Indicator */}
-              <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
-                <span className="text-sm text-gray-600">Step 3 of 4</span>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4].map((step) => (
-                    <div
-                      key={step}
-                      className={`w-2 h-2 rounded-full transition-all ${step === currentStep
-                        ? "bg-blue-600 scale-125"
-                        : step < currentStep
-                          ? "bg-green-500"
-                          : "bg-gray-300"
-                        }`}
-                    />
-                  ))}
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4].map(step => (
+                      <button
+                        key={step}
+                        className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer
+          ${step === currentStep ? "bg-blue-600 scale-125" : ""}
+          ${step < currentStep ? "bg-green-500" : ""}
+          ${step > currentStep ? "bg-gray-300" : ""}
+          hover:scale-150`}
+                        onClick={() => setCurrentStep(step)}
+                      />
+                    ))}
+                  </div>
                 </div>
+
               </div>
             </div>
 
@@ -1633,22 +1626,26 @@ const UpdatePage = () => {
               {/* Progress Header */}
               <div className="flex items-center justify-between mb-8">
                 {/* Step Indicator */}
-                <div className="flex items-center gap-2 bg-gray-100 border-2 border-gray-200 px-4 py-2 rounded-full">
-                  <span className="text-sm text-gray-700">Step 4 of 4</span>
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4].map((step) => (
-                      <div
+                <div className="flex items-center gap-3 bg-white shadow-sm px-5 py-2 rounded-full border border-gray-200">
+                  <span className="text-sm font-medium text-gray-700">
+                    Step {currentStep} of 4
+                  </span>
+
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4].map(step => (
+                      <button
                         key={step}
-                        className={`w-2 h-2 rounded-full transition-all ${step === currentStep
-                          ? "bg-blue-600 scale-125"
-                          : step < currentStep
-                            ? "bg-green-500"
-                            : "bg-gray-300"
-                          }`}
+                        className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer 
+          ${step === currentStep ? "bg-blue-600 scale-125" : ""}
+          ${step < currentStep ? "bg-green-500" : ""}
+          ${step > currentStep ? "bg-gray-300" : ""}
+          hover:scale-150`}
+                        onClick={() => setCurrentStep(step)}
                       />
                     ))}
                   </div>
                 </div>
+
               </div>
 
               {/* Form Grid */}
@@ -1936,7 +1933,7 @@ const UpdatePage = () => {
 
               {/* Preview Card */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200 mb-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col">
                   <div className="flex items-center gap-4">
                     <div className="p-3 rounded-full bg-white shadow-sm">
                       <FaEye className="text-blue-600 text-lg" />
@@ -1971,28 +1968,6 @@ const UpdatePage = () => {
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={handleContinue}
-                    disabled={loading}
-                    className="relative cursor-pointer flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-[50px] hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 font-medium shadow-lg hover:shadow-xl disabled:shadow-md transform hover:scale-105 disabled:scale-100 min-w-[180px] overflow-hidden group"
-                  >
-                    {/* Animated background shine effect */}
-                    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-
-                    {loading ? (
-                      <>
-                        <div className="relative z-10 flex items-center gap-3">
-                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                          <span className="font-semibold">Processing...</span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <FaCheck className="text-lg relative z-10" />
-                        <span className="relative z-10 font-semibold">Complete Listing</span>
-                      </>
-                    )}
-                  </button>
                 </div>
               </div>
 
