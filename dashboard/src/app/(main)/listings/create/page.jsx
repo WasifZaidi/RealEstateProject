@@ -7,7 +7,6 @@ import CustomToast from "@/app/components/CustomToast";
 import { useRef } from "react";
 import { uploadListing } from "@/utils/api";
 import { propertyTypes } from "@/app/constants/propertyTypes"
-import { amenities } from "@/app/constants/amenities"
 import PropertyCoordinates from "@/app/components/PropertyCoordinates";
 const Page = () => {
     const [activeTab, setActiveTab] = useState("Residential");
@@ -707,8 +706,8 @@ const Page = () => {
                                     key={tab}
                                     onClick={() => { setActiveTab(tab); setSelectedProperty(""); }}
                                     className={`flex-1 min-w-[150px] cursor-pointer py-4 px-6 rounded-[50px] font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === tab
-                                            ? "bg-blue-600 text-white shadow-md"
-                                            : "text-gray-600 hover:text-gray-900 hover:bg-white"
+                                        ? "bg-blue-600 text-white shadow-md"
+                                        : "text-gray-600 hover:text-gray-900 hover:bg-white"
                                         }`}
                                 >
                                     <span className="flex-shrink-0">
@@ -901,17 +900,6 @@ const Page = () => {
                                             </p>
                                         )}
                                     </div>
-
-                                    <div className="space-y-4 pt-6 border-t border-gray-200">
-                                        <PropertyCoordinates
-                                            coordinates={coordinates}
-                                            setCoordinates={setCoordinates}
-                                            address={address}
-                                            setAddress={setAddress}
-                                            errors={errors}
-                                            setErrors={setErrors}
-                                        />
-                                    </div>
                                 </div>
                             </div>
 
@@ -1013,6 +1001,18 @@ const Page = () => {
                             </div>
                         </div>
 
+
+                        <div className="space-y-6 mb-[20px] pt-6 border-t border-gray-200">
+                            <PropertyCoordinates
+                                coordinates={coordinates}
+                                setCoordinates={setCoordinates}
+                                address={address}
+                                setAddress={setAddress}
+                                errors={errors}
+                                setErrors={setErrors}
+                            />
+                        </div>
+
                         {/* Preview Card */}
                         {(propertyFor || state || city || size || price) && (
                             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200 mb-6">
@@ -1078,7 +1078,7 @@ const Page = () => {
                         )}
 
                         {/* Navigation */}
-                        <div className="flex justify-between items-center pt-6 border-t border-gray-200">
+                        <div className="flex justify-between items-center pt-6 border-t  border-gray-200">
                             <button
                                 onClick={() => setCurrentStep(1)}
                                 className="flex items-center gap-2 px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors font-medium"

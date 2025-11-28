@@ -2,7 +2,7 @@
 const NodeGeocoder = require('node-geocoder');
 
 const options = {
-  provider: 'openstreetmap', // or 'google', 'mapquest', etc.
+  provider: 'openstreetmap',
   httpAdapter: 'https',
   formatter: null
 };

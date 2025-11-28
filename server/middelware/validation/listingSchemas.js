@@ -3,22 +3,39 @@ const Joi = require('joi');
 // Common reusable schemas
 const locationSchema = Joi.object({
   state: Joi.string().trim().required().messages({
-    'string.empty': 'State is required',
-    'any.required': 'State is required'
+    "string.empty": "State is required",
+    "any.required": "State is required",
   }),
+
   city: Joi.string().trim().required().messages({
-    'string.empty': 'City is required',
-    'any.required': 'City is required'
+    "string.empty": "City is required",
+    "any.required": "City is required",
   }),
+
+  // NEW FIELD: address
+  address: Joi.string().trim().allow("", null),
+
+  // NEW FIELDS: lat / lng from frontend
+  lat: Joi.number().optional(),
+  lng: Joi.number().optional(),
+
+  // Your existing GeoJSON structure
   coordinates: Joi.object({
-    type: Joi.string().valid('Point').default('Point'),
-    coordinates: Joi.array().items(Joi.number()).length(2).optional()
+    type: Joi.string().valid("Point").default("Point"),
+    coordinates: Joi.array().items(Joi.number()).length(2).optional(),
   }).optional(),
-  zipCode: Joi.string().pattern(/^\d{5}(-\d{4})?$/).optional().messages({
-    'string.pattern.base': 'Zip code must be in valid format (e.g., 12345 or 12345-6789)'
-  }),
-  neighborhood: Joi.string().trim().optional()
+
+  zipCode: Joi.string()
+    .pattern(/^\d{5}(-\d{4})?$/)
+    .optional()
+    .messages({
+      "string.pattern.base":
+        "Zip code must be in valid format (e.g., 12345 or 12345-6789)",
+    }),
+
+  neighborhood: Joi.string().trim().optional(),
 });
+
 
 const pricingSchema = Joi.object({
   amount: Joi.number().min(0).max(100000000).required().messages({
@@ -53,6 +70,10 @@ const createListingSchema = Joi.object({
     'any.required': 'Title is required'
   }),
   description: Joi.string().trim().max(5000).optional(),
+
+  isFeatured: Joi.boolean().optional().messages({
+    'boolean.base': 'isFeatured must be a boolean'
+  }),
 
   // Property Classification
   propertyType: Joi.object({
@@ -233,12 +254,12 @@ const filterListingSchema = Joi.object({
 
   // Sorting - Enhanced options
   sortBy: Joi.string().valid(
-    'price.amount', 
-    'listedAt', 
-    'views', 
+    'price.amount',
+    'listedAt',
+    'views',
     'favoritesCount',
-    'details.size', 
-    'details.bedrooms', 
+    'details.size',
+    'details.bedrooms',
     'details.bathrooms',
     'isFeatured', // Added for recommended sorting
     'isPremium'   // Added for premium priority

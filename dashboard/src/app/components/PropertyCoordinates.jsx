@@ -13,7 +13,8 @@ import {
   FaMap,
   FaGlobeAmericas,
   FaCompass,
-  FaSearch
+  FaSearch,
+  FaLightbulb
 } from 'react-icons/fa';
 
 // Import Leaflet CSS only on client side
@@ -52,65 +53,90 @@ const PropertyCoordinates = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState(null);
   const searchInputRef = useRef(null);
-
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(null);
 
   function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
       clearTimeout(timeout);
-      func(...args);
+      timeout = setTimeout(later, wait);
     };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
+  }
 
-async function searchLocation(query) {
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=5`
-  );
-  const data = await res.json();
-  return data.map((item) => ({
-    name: item.display_name,
-    lat: item.lat,
-    lng: item.lon,
-  }));
-}
+  async function searchLocation(query) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=5`;
 
+      const res = await fetch(url);
 
-
-  const handleSearch = useCallback(
-    debounce(async (query) => {
-      if (query.length < 3) {
-        setSearchResults([]);
-        return;
+      if (!res.ok) {
+        throw new Error("Failed to fetch locations");
       }
 
-      const results = await searchLocation(query);
+      const data = await res.json();
+
+      if (!Array.isArray(data) || data.length === 0) {
+        return [];
+      }
+
+      return data.map((item) => ({
+        name: item.display_name,
+        lat: item.lat,
+        lng: item.lon,
+      }));
+    } catch (err) {
+      console.error("Search error:", err);
+      return { error: true, message: err.message };
+    }
+  }
+
+
+
+  async function handleSearch() {
+    if (searchQuery.trim().length < 3) {
+      setError("Please type at least 3 characters.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    const results = await searchLocation(searchQuery);
+
+    if (results.error) {
+      setError(results.message || "Something went wrong.");
+      setSearchResults([]);
+    } else {
       setSearchResults(results);
-    }, 300),
-    []
-  );
+    }
+
+    setIsLoading(false);
+  }
+
 
   // Handle search result selection
-const handleSearchResultSelect = (result) => {
-  const newCoords = {
-    lat: parseFloat(result.lat),
-    lng: parseFloat(result.lng),
+  const handleSearchResultSelect = (result) => {
+    const newCoords = {
+      lat: parseFloat(result.lat),
+      lng: parseFloat(result.lng),
+    };
+
+    setTempCoordinates(newCoords);
+    setSearchResults([]);
+    setSearchQuery(result.name);
+
+    // 🔥 FORCE MAP TO MOVE
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("move-map-to", { detail: newCoords })
+      );
+    }, 50);
   };
-
-  setTempCoordinates(newCoords);
-  setSearchResults([]);
-  setSearchQuery(result.name);
-
-  // 🔥 FORCE MAP TO MOVE
-  setTimeout(() => {
-    window.dispatchEvent(
-      new CustomEvent("move-map-to", { detail: newCoords })
-    );
-  }, 50);
-};
 
   // Set client-side flag
   useEffect(() => {
@@ -359,13 +385,13 @@ const handleSearchResultSelect = (result) => {
       </div>
 
       {/* Mode Selector */}
-      <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-lg">
+      <div className="grid grid-cols-4 gap-2 p-1 bg-gray-100 rounded-[50px]">
         <button
           type="button"
           onClick={() => setMapMode('search')}
-          className={`py-2 px-3 text-sm font-medium rounded-md transition-colors ${mapMode === 'search'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+          className={`py-2 px-3 text-sm font-medium cursor-pointer rounded-[50px] transition-colors ${mapMode === 'search'
+            ? 'bg-white text-blue-600 shadow-sm'
+            : 'text-gray-600 hover:text-gray-900'
             }`}
         >
           <FaSearchLocation className="inline mr-1" />
@@ -374,9 +400,9 @@ const handleSearchResultSelect = (result) => {
         <button
           type="button"
           onClick={() => setMapMode('manual')}
-          className={`py-2 px-3 text-sm font-medium rounded-md transition-colors ${mapMode === 'manual'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+          className={`py-2 px-3 text-sm font-medium cursor-pointer rounded-[50px] transition-colors ${mapMode === 'manual'
+            ? 'bg-white text-blue-600 shadow-sm'
+            : 'text-gray-600 hover:text-gray-900'
             }`}
         >
           <FaEdit className="inline mr-1" />
@@ -385,9 +411,9 @@ const handleSearchResultSelect = (result) => {
         <button
           type="button"
           onClick={() => setMapMode('map')}
-          className={`py-2 px-3 text-sm font-medium rounded-md transition-colors ${mapMode === 'map'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+          className={`py-2 px-3 text-sm font-medium cursor-pointer rounded-[50px] transition-colors ${mapMode === 'map'
+            ? 'bg-white text-blue-600 shadow-sm'
+            : 'text-gray-600 hover:text-gray-900'
             }`}
         >
           <FaMap className="inline mr-1" />
@@ -396,9 +422,9 @@ const handleSearchResultSelect = (result) => {
         <button
           type="button"
           onClick={() => setMapMode('pin')}
-          className={`py-2 px-3 text-sm font-medium rounded-md transition-colors ${mapMode === 'pin'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+          className={`py-2 px-3 text-sm font-medium cursor-pointer rounded-[50px] transition-colors ${mapMode === 'pin'
+            ? 'bg-white text-blue-600 shadow-sm'
+            : 'text-gray-600 hover:text-gray-900'
             }`}
         >
           <FaCrosshairs className="inline mr-1" />
@@ -432,7 +458,7 @@ const handleSearchResultSelect = (result) => {
           <button
             type="button"
             onClick={openMapModal}
-            className="w-full py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+            className="w-full py-2 px-4 border border-gray-300 cursor-pointer rounded-[50px] hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
           >
             <FaMap className="inline mr-2" />
             Open Interactive Map
@@ -473,7 +499,7 @@ const handleSearchResultSelect = (result) => {
             <button
               type="button"
               onClick={openMapModal}
-              className="py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+              className="py-2 px-4 border border-gray-300 rounded-[50px] cursor-pointer hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
             >
               <FaGlobeAmericas className="inline mr-2" />
               Verify on Map
@@ -497,7 +523,7 @@ const handleSearchResultSelect = (result) => {
               <button
                 type="button"
                 onClick={openMapModal}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                className="px-6 py-2 bg-blue-600 text-white rounded-[50px] cursor-pointer hover:bg-blue-700 transition-colors font-medium"
               >
                 Open Map
               </button>
@@ -524,7 +550,7 @@ const handleSearchResultSelect = (result) => {
             <button
               type="button"
               onClick={openMapModal}
-              className="py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+              className="py-2 px-4 border border-gray-300 rounded-[50px] cursor-pointer hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
             >
               <FaMap className="inline mr-2" />
               Or Select on Map
@@ -584,146 +610,188 @@ const handleSearchResultSelect = (result) => {
         </div>
       )}
 
-      {/* Help Text */}
-      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <h4 className="font-semibold text-blue-800 text-sm mb-1">
-          Why add coordinates?
-        </h4>
-        <ul className="text-blue-700 text-xs space-y-1">
-          <li>• Precise location mapping for buyers</li>
-          <li>• Better search results and recommendations</li>
-          <li>• Accurate distance calculations</li>
-          <li>• Interactive map displays</li>
-          <li>• Professional property presentation</li>
-        </ul>
-      </div>
+      {/* Map Modal */}
+      {isMapModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
 
-    {/* Map Modal */}
-{isMapModalOpen && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-
-    {/* Backdrop */}
-    <div
-      className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-      onClick={closeMapModal}
-    />
-
-    {/* Modal */}
-    <div className="relative bg-white w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl rounded-3xl overflow-hidden">
-
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
-        <div>
-          <h3 className="text-xl font-semibold flex items-center gap-2">
-            <FaMapMarkerAlt className="text-blue-600" />
-            Select Property Location
-          </h3>
-          <p className="text-gray-600 text-sm">Search or click on the map to select location.</p>
-        </div>
-
-        <div className="flex items-center gap-3 w">
-          {tempCoordinates && (
-            <button
-              onClick={useMapCoordinates}
-              className="px-6 py-3 flex items-center gap-[10px] cursor-pointer text-sm bg-blue-600 text-white rounded-[50px] shadow hover:bg-blue-700 transition"
-            >
-              <FaCheck /> Confirm
-            </button>
-          )}
-
-          <button
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={closeMapModal}
-            className="p-3 rounded-xl hover:bg-gray-100 transition"
-          >
-            <FaTimes className="text-xl text-gray-500" />
-          </button>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="px-6 py-3 bg-white">
-        <div className="relative max-w-xl">
-          <input
-            type="text"
-            placeholder="Search address, place, or coordinates…"
-            className="w-full normal_input mod_2"
-            onChange={(e) => handleSearch(e.target.value)}
           />
 
-          <FaSearch className="absolute left-3 top-[16px] text-gray-400" />
+          {/* Modal */}
+          <div className="relative bg-white w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl rounded-3xl overflow-hidden">
 
-          {searchQuery?.length > 0 && (
-            <FaTimes
-              className="absolute right-3 top-[17px] text-gray-400 cursor-pointer"
-              onClick={() => {
-                setSearchQuery("");
-                setSearchResults([]);
-              }}
-            />
-          )}
-        </div>
-      </div>
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
+              <div>
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  <FaMapMarkerAlt className="text-blue-600" />
+                  Select Property Location
+                </h3>
+                <p className="text-gray-600 text-sm">Search or click on the map to select location.</p>
+              </div>
 
-      {/* Main Map */}
-      <div className="flex-1 relative">
+              <div className="flex items-center gap-3">
+                {tempCoordinates && (
+                  <button
+                    onClick={useMapCoordinates}
+                    className="px-6 py-3 flex items-center gap-[10px] cursor-pointer text-sm bg-blue-600 text-white rounded-[50px] shadow hover:bg-blue-700 transition"
+                  >
+                    <FaCheck /> Confirm
+                  </button>
+                )}
 
-        <LeafletMap
-          coordinates={tempCoordinates}
-            tempCoordinates={tempCoordinates}
-  setTempCoordinates={setTempCoordinates}
-          searchResults={searchResults}
-          onMapClick={handleMapClick}
-          onSearchSelect={(loc) => {
-            setTempCoordinates({ lat: loc.lat, lng: loc.lng });
-            setSearchResults([]);
-          }}
-        />
-
-        {/* Search Result Panel */}
-       {searchResults.length > 0 && (
-  <div className="absolute top-6 left-6 w-96 bg-white shadow-2xl rounded-2xl overflow-hidden border border-gray-100 max-h-[400px] z-[999] backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-200">
-    <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
-      <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        Search Results
-        <span className="ml-auto text-xs font-normal text-gray-500 bg-white px-2 py-1 rounded-full">
-          {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
-        </span>
-      </h3>
-    </div>
-    <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
-      {searchResults.map((item, index) => (
-        <div
-          key={index}
-          className="p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 cursor-pointer transition-all duration-200 group"
-          onClick={() => handleSearchResultSelect(item)}
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
-                {item.name}
-              </p>
-              <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
-                {item.address}
-              </p>
+                <button
+                  onClick={closeMapModal}
+                  className="p-3 rounded-xl hover:bg-gray-100 transition"
+                >
+                  <FaTimes className="text-xl text-gray-500" />
+                </button>
+              </div>
             </div>
-            <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+
+            {/* Enhanced Search Bar */}
+            <div className="px-6 py-4 bg-white border-b border-gray-100">
+              <div className="relative max-w-xl">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="Search address, place, or coordinates…"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSearch();
+                        }
+                      }}
+                      className="normal_input mod_2 pr_normal"
+                      disabled={isLoading}
+                    />
+
+                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+
+                    {searchQuery?.length > 0 && !isLoading && (
+                      <button
+                        onClick={() => {
+                          setSearchQuery("");
+                          setSearchResults([]);
+                        }}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <FaTimes />
+                      </button>
+                    )}
+
+                    {isLoading && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleSearch}
+                    disabled={isLoading || !searchQuery.trim()}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-sm flex items-center gap-2 min-w-[120px] justify-center"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        <span>Searching...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaSearch className="text-sm" />
+                        <span>Search</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Search tips */}
+                <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <FaLightbulb className="text-yellow-500" />
+                    Tip: Press Enter to search
+                  </span>
+                  <span>•</span>
+                  <span>Search for addresses, landmarks, or coordinates</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Map */}
+            <div className="flex-1 relative">
+              <LeafletMap
+                coordinates={tempCoordinates}
+                tempCoordinates={tempCoordinates}
+                setTempCoordinates={setTempCoordinates}
+                searchResults={searchResults}
+                onMapClick={handleMapClick}
+                onSearchSelect={(loc) => {
+                  setTempCoordinates({ lat: loc.lat, lng: loc.lng });
+                  setSearchResults([]);
+                }}
+              />
+
+              {/* Search Result Panel */}
+              {searchResults.length > 0 && (
+                <div className="absolute top-6 left-6 w-96 bg-white shadow-2xl rounded-2xl overflow-hidden border border-gray-100 max-h-[400px] z-[999] backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Search Results
+                      <span className="ml-2 text-xs font-normal text-gray-500 bg-white px-2 py-1 rounded-full">
+                        {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
+                      </span>
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setSearchResults([]);
+                      }}
+                      className="p-1 rounded-lg hover:bg-white/80 transition-all duration-200 group"
+                      title="Close results"
+                    >
+                      <FaTimes className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors" />
+                    </button>
+                  </div>
+
+                  {/* Results List */}
+                  <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                    {searchResults.map((item, index) => (
+                      <div
+                        key={index}
+                        className="p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 cursor-pointer transition-all duration-200 group"
+                        onClick={() => handleSearchResultSelect(item)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+                              {item.name}
+                            </p>
+                            <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
+                              {item.address}
+                            </p>
+                          </div>
+                          <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      ))}
-    </div>
-  </div>
-)}
-
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
     </div>
   );

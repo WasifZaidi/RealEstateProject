@@ -43,6 +43,26 @@ const sanitizeInput = (input) => {
   return input;
 };
 
+const sanitizeCoordinates = (lat, lng) => {
+  // Convert to numbers safely
+  let sanitizedLat = Number(String(lat).replace(/[^\d.-]/g, ''));
+  let sanitizedLng = Number(String(lng).replace(/[^\d.-]/g, ''));
+
+  // If invalid → fallback to 0
+  if (isNaN(sanitizedLat)) sanitizedLat = 0;
+  if (isNaN(sanitizedLng)) sanitizedLng = 0;
+
+  // Clamp values into valid Earth coordinate range
+  sanitizedLat = Math.min(Math.max(sanitizedLat, -90), 90);
+  sanitizedLng = Math.min(Math.max(sanitizedLng, -180), 180);
+
+  return {
+    lat: sanitizedLat,
+    lng: sanitizedLng,
+  };
+};
+
+
 // Create a new Listing
 exports.createListing = async (req, res) => {
   const session = await Listing.startSession();
@@ -76,7 +96,8 @@ exports.createListing = async (req, res) => {
       owner,
       agent,
       contactInfo,
-      propertyFor = 'Sell'
+      propertyFor = 'Sell',
+      isFeatured
     } = sanitizedBody;
 
     // 🎯 Parse and validate JSON fields
@@ -117,68 +138,59 @@ exports.createListing = async (req, res) => {
     details.lotSize = numericFields.detailsLotSize;
     details.parkingSpaces = numericFields.detailsParkingSpaces;
 
+    // address is required from frontend
+    if (!location || !location.address) {
+      throw new Error('VALIDATION_ERROR: Address is required.');
+    }
+
     if (location) {
-      // Case 1: Direct lat/lng provided
+      // ============================
+      // CASE 1: Direct lat/lng from frontend (MAP SELECTED)
+      // ============================
       if (location.lat != null && location.lng != null) {
+
         if (!validateCoordinates(location.lat, location.lng)) {
-          throw new Error('VALIDATION_ERROR: Invalid coordinates provided. Latitude must be between -90 and 90, longitude between -180 and 180.');
+          throw new Error(
+            'VALIDATION_ERROR: Invalid coordinates provided. Latitude must be between -90 and 90, longitude between -180 and 180.'
+          );
         }
 
-        const sanitizedCoords = sanitizeCoordinates(location.lat, location.lng);
+        const sanitized = sanitizeCoordinates(location.lat, location.lng);
+
         location.coordinates = {
           type: "Point",
-          coordinates: [sanitizedCoords.lng, sanitizedCoords.lat], // GeoJSON format: [lng, lat]
+          coordinates: [sanitized.lng, sanitized.lat], // GeoJSON format
         };
 
-        // Remove individual lat/lng to avoid duplication
         delete location.lat;
         delete location.lng;
       }
-      // Case 2: Coordinates object provided
-      else if (location.coordinates && Array.isArray(location.coordinates.coordinates)) {
-        const [lng, lat] = location.coordinates.coordinates;
-        if (!validateCoordinates(lat, lng)) {
-          throw new Error('VALIDATION_ERROR: Invalid coordinates format in coordinates object');
-        }
 
-        const sanitizedCoords = sanitizeCoordinates(lat, lng);
-        location.coordinates = {
-          type: "Point",
-          coordinates: [sanitizedCoords.lng, sanitizedCoords.lat],
-        };
-      }
-      // Case 3: No coordinates provided - geocode from address
-      else if (location.address) {
+      // ============================
+      // CASE 2: NO lat/lng → fallback to geocoding the address
+      // ============================
+      else {
+        console.log("geocoderruns")
         try {
-          // Implement geocoding service here
-          const geocodedCoords = await geocodeAddress(location.address);
-          if (geocodedCoords) {
+          const geo = await geocodeAddress(location.address);
+          if (geo) {
             location.coordinates = {
               type: "Point",
-              coordinates: [geocodedCoords.lng, geocodedCoords.lat],
+              coordinates: [geo.lng, geo.lat],
             };
           } else {
-            // Fallback to default coordinates or throw error
             location.coordinates = {
               type: "Point",
-              coordinates: [0, 0], // Or handle as needed
+              coordinates: [0, 0],
             };
-            console.warn('Geocoding failed for address:', location.address);
           }
-        } catch (geocodeError) {
-          console.error('Geocoding error:', geocodeError);
+        } catch (err) {
+          console.error("Geocoding failed:", err);
           location.coordinates = {
             type: "Point",
             coordinates: [0, 0],
           };
         }
-      }
-      // Case 4: No location data at all
-      else {
-        location.coordinates = {
-          type: "Point",
-          coordinates: [0, 0], // Default coordinates
-        };
       }
     }
 
@@ -277,6 +289,7 @@ exports.createListing = async (req, res) => {
       amenities: Array.isArray(amenities) ? amenities : [],
       media,
       agentRef: agentRef,
+      isFeatured,
       agentId: uuidv4(),
       owner: owner.trim(),
       agent: agent?.trim(),

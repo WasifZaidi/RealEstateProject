@@ -2,7 +2,8 @@ const Listing = require("../../Model/Listing");
 const Meeting = require("../../Model/Meeting");
 const cloudinary = require('../../utils/cloudinary'); // Assuming Cloudinary utility
 const FileCleanupManager = require('../../utils/fileCleanup'); // Assuming local file cleanup utility
-const { v4: uuidv4 } = require("uuid")
+const { v4: uuidv4 } = require("uuid");
+const { geocodeAddress } = require("../../utils/geocoding");
 
 exports.getListingById = async (req, res) => {
   try {
@@ -67,6 +68,26 @@ const validateCoordinates = (lat, lng) => {
   );
 };
 
+const sanitizeCoordinates = (lat, lng) => {
+  // Convert to numbers safely
+  let sanitizedLat = Number(String(lat).replace(/[^\d.-]/g, ''));
+  let sanitizedLng = Number(String(lng).replace(/[^\d.-]/g, ''));
+
+  // If invalid → fallback to 0
+  if (isNaN(sanitizedLat)) sanitizedLat = 0;
+  if (isNaN(sanitizedLng)) sanitizedLng = 0;
+
+  // Clamp values into valid Earth coordinate range
+  sanitizedLat = Math.min(Math.max(sanitizedLat, -90), 90);
+  sanitizedLng = Math.min(Math.max(sanitizedLng, -180), 180);
+
+  return {
+    lat: sanitizedLat,
+    lng: sanitizedLng,
+  };
+};
+
+
 const sanitizeInput = (input) => {
   if (typeof input === 'string') {
     return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
@@ -107,6 +128,34 @@ exports.updateListing = async (req, res) => {
     const price = safeParse(sanitizedBody.price, {});
     const details = safeParse(sanitizedBody.details, {});
     const amenities = safeParse(sanitizedBody.amenities, []);
+
+    const isFeatured = sanitizedBody.isFeatured;
+
+    if (location) {
+      if (location.lat != null && location.lng != null) {
+        if (!validateCoordinates(location.lat, location.lng)) {
+          throw new Error('VALIDATION_ERROR: Invalid coordinates provided.');
+        }
+        location.coordinates = { type: "Point", coordinates: [location.lng, location.lat] };
+        delete location.lat;
+        delete location.lng;
+      } else if (location.address) {
+        try {
+          const geo = await geocodeAddress(location.address);
+          if (geo) {
+            location.coordinates = { type: "Point", coordinates: [geo.lng, geo.lat] };
+          } else {
+            location.coordinates = { type: "Point", coordinates: [0, 0] };
+          }
+        } catch (err) {
+          console.error("Geocoding failed:", err);
+          location.coordinates = { type: "Point", coordinates: [0, 0] };
+        }
+      }
+
+      if (location.address) location.formattedAddress = location.address;
+    }
+
 
     // Media-specific data - FIXED: Proper parsing
     const removedMediaIds = safeParse(sanitizedBody.removedMediaIds, []);
@@ -276,6 +325,7 @@ exports.updateListing = async (req, res) => {
       },
       amenities: Array.isArray(amenities) ? amenities : listing.amenities,
       media: finalMedia,
+      isFeatured: typeof isFeatured === 'boolean' ? isFeatured : listing.isFeatured,
       updatedAt: new Date()
     });
 

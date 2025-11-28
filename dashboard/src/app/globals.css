@@ -101,6 +101,10 @@ body {
   padding-left: 40px;
 }
 
+.normal_input.pr_normal{
+  padding-right: 40px;
+}
+
 
 /* Fix for Leaflet map container */
 .leaflet-container {
@@ -128,3 +132,16 @@ body {
   background-color: rgba(0,0,0.5);
 }
 
+.loader_button {
+  width: 16px;
+  height: 16px;
+  border: 2px solid white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -36,18 +36,22 @@ export const uploadListing = async ({
     formData.append("propertyType[subType]", selectedProperty);
 
     // Location as individual fields
-    formData.append("location[state]", state);
-    formData.append("location[city]", city);
-    formData.append("location[address]", address || "");
+
+    const locationData = {
+      state,
+      city,
+      address,
+    }
 
     if (coordinates) {
-      formData.append("location[lat]", coordinates.lat.toString());
-      formData.append("location[lng]", coordinates.lng.toString());
+      locationData.lat = coordinates?.lat,
+      locationData.lng = coordinates?.lng
     }
 
-    if (address) {
-      formData.append("location[address]", address);
-    }
+    formData.append("location", JSON.stringify(locationData));
+
+    console.log("loc", locationData)
+
 
     // Price as individual fields - CONVERT TO NUMBERS
     const numericPrice = parseInt(price.replace(/,/g, ""), 10) || 0;
