@@ -349,10 +349,6 @@ const Page = () => {
             }
         }
     }, [previews]);
-
-    useEffect(()=>{
-
-    },[coordinates])
     // File Card Component
     const FileCard = ({ preview, index, onRemove, onReorder, onSetCover, isCover, canSetCover }) => {
         const [isDragging, setIsDragging] = useState(false);
@@ -1503,56 +1499,50 @@ const Page = () => {
                                 </div>
 
                                 <div className="space-y-2 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-4 border-gray-100">
-                               <div className="w-full space-y-3 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300">
-  <label className="flex items-center justify-between cursor-pointer group">
-    <div className="flex items-center gap-3">
-      <div className={`p-2 rounded-lg transition-all duration-300 ${
-        isFeatured ? "bg-yellow-100 shadow-inner" : "bg-gray-100 group-hover:bg-gray-200"
-      }`}>
-        <FaStar className={`text-lg transition-all duration-300 ${
-          isFeatured ? "text-yellow-500 scale-110 animate-pulse" : "text-gray-400 group-hover:text-gray-500"
-        }`} />
-      </div>
-      <div className="flex flex-col">
-        <span className={`font-semibold transition-colors duration-300 ${
-          isFeatured ? "text-yellow-700" : "text-gray-800"
-        }`}>
-          Featured Property
-        </span>
-        <span className="text-sm text-gray-600">
-          {isFeatured ? "Currently featured" : "Make property stand out"}
-        </span>
-      </div>
-    </div>
+                                    <div className="w-full space-y-3 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                                        <label className="flex items-center justify-between cursor-pointer group">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`p-2 rounded-lg transition-all duration-300 ${isFeatured ? "bg-yellow-100 shadow-inner" : "bg-gray-100 group-hover:bg-gray-200"
+                                                    }`}>
+                                                    <FaStar className={`text-lg transition-all duration-300 ${isFeatured ? "text-yellow-500 scale-110 animate-pulse" : "text-gray-400 group-hover:text-gray-500"
+                                                        }`} />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className={`font-semibold transition-colors duration-300 ${isFeatured ? "text-yellow-700" : "text-gray-800"
+                                                        }`}>
+                                                        Featured Property
+                                                    </span>
+                                                    <span className="text-sm text-gray-600">
+                                                        {isFeatured ? "Currently featured" : "Make property stand out"}
+                                                    </span>
+                                                </div>
+                                            </div>
 
-    <button
-      type="button"
-      onClick={() => setIsFeatured(!isFeatured)}
-      className={`relative cursor-pointer inline-flex items-center h-7 w-14 rounded-full transition-all duration-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 ${
-        isFeatured 
-          ? "bg-yellow-500 shadow-lg shadow-yellow-500/30" 
-          : "bg-gray-300 group-hover:bg-gray-400 shadow-inner"
-      }`}
-    >
-      <span
-        className={`inline-block w-5 h-5 transform bg-white rounded-full shadow-lg transition-all duration-400 ${
-          isFeatured 
-            ? "translate-x-8 scale-110 shadow-yellow-900/20" 
-            : "translate-x-1 scale-100 shadow-gray-900/20"
-        }`}
-      />
-    </button>
-  </label>
-  
-  <p className={`text-xs transition-colors py-2 px-3 duration-300 px-1 ${
-    isFeatured ? "text-yellow-600 bg-yellow-50 py-2 px-3 rounded-lg" : "text-gray-500"
-  }`}>
-    {isFeatured 
-      ? "✨ This property will be prominently featured on the homepage and listing pages." 
-      : "Toggle to make this property featured and increase its visibility."
-    }
-  </p>
-</div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsFeatured(!isFeatured)}
+                                                className={`relative cursor-pointer inline-flex items-center h-7 w-14 rounded-full transition-all duration-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 ${isFeatured
+                                                        ? "bg-yellow-500 shadow-lg shadow-yellow-500/30"
+                                                        : "bg-gray-300 group-hover:bg-gray-400 shadow-inner"
+                                                    }`}
+                                            >
+                                                <span
+                                                    className={`inline-block w-5 h-5 transform bg-white rounded-full shadow-lg transition-all duration-400 ${isFeatured
+                                                            ? "translate-x-8 scale-110 shadow-yellow-900/20"
+                                                            : "translate-x-1 scale-100 shadow-gray-900/20"
+                                                        }`}
+                                                />
+                                            </button>
+                                        </label>
+
+                                        <p className={`text-xs transition-colors py-2 px-3 duration-300 px-1 ${isFeatured ? "text-yellow-600 bg-yellow-50 py-2 px-3 rounded-lg" : "text-gray-500"
+                                            }`}>
+                                            {isFeatured
+                                                ? "✨ This property will be prominently featured on the homepage and listing pages."
+                                                : "Toggle to make this property featured and increase its visibility."
+                                            }
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 

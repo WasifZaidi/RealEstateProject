@@ -14,65 +14,99 @@ import { amenities } from "@/app/constants/amenities"
 import PropertyCoordinates from "@/app/components/PropertyCoordinates";
 // Re-using helper functions from the Create page
 const trimFileName = (name, maxLength = 15) => name.length <= maxLength ? name : name.slice(0, maxLength - 4) + "..." + name.split(".").pop();
-// ... (Include PropertyButton, FileCard, MoveFileControls, validators, handlePriceChange, handleSizeChange, etc., from Page.jsx) ...
 
 const UpdatePage = () => {
-  const { id: listingId } = useParams(); // Get ID from the URL
+  const { id: listingId } = useParams();
   const [initialLoading, setInitialLoading] = useState(true);
-  const [existingMedia, setExistingMedia] = useState([]); // State for media already on the server
-  const [newFiles, setNewFiles] = useState([]); // State for files added in this session
-  const [removedMediaIds, setRemovedMediaIds] = useState([]); // Array of public_ids to delete
-  const [mediaOrder, setMediaOrder] = useState([]); // The final ordered list of media public_ids/temporary indices
+  const [existingMedia, setExistingMedia] = useState([]);
+  const [newFiles, setNewFiles] = useState([]);
+  const [removedMediaIds, setRemovedMediaIds] = useState([]);
+  const [mediaOrder, setMediaOrder] = useState([]);
   const [mediaTempIds, setMediaTempIds] = useState([]);
+
+  // 🔄 NEW: Track initial values and changes
+  const [initialData, setInitialData] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [savePanelVisible, setSavePanelVisible] = useState(false);
+
+
 
   // =========================================================================
   // 💡 Fetching and Pre-population Logic
   // =========================================================================
   useEffect(() => {
     if (!listingId) return;
-
     const fetchData = async () => {
       setInitialLoading(true);
       try {
         const response = await getListing(listingId);
-        console.log(response)
         if (response.success) {
           const listing = response.listing;
 
-          // 1. Map existing media to preview format
+          // Map existing media to preview format
           const existingPreviews = listing.media.map((m, index) => ({
             src: m.url,
-            type: m.resource_type, // 'image' or 'video'
-            name: m.public_id, // Use public_id as the unique identifier
+            type: m.resource_type,
+            name: m.public_id,
             size: m.bytes,
             duration: m.duration || null,
-            public_id: m.public_id, // Key for tracking
+            public_id: m.public_id,
             isExisting: true,
             uploadOrder: m.uploadOrder,
           }));
 
-          // 2. Set initial state from fetched data
+          // Format coordinates
+          const rawCoords = listing.location?.coordinates?.coordinates || [0, 0];
+          const formattedCoords = {
+            lat: parseFloat(rawCoords[1]),
+            lng: parseFloat(rawCoords[0])
+          };
+
+          // Prepare initial data object for change detection
+          const initialDataSnapshot = {
+            activeTab: listing.propertyType.category,
+            selectedProperty: listing.propertyType.subType,
+            propertyFor: listing.propertyFor,
+            state: listing.location.state,
+            city: listing.location.city,
+            isFeatured: listing.isFeatured,
+            address: listing.location.formattedAddress,
+            size: listing.details.size.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+            price: listing.price.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+            priceType: listing.price.priceType,
+            propertyName: listing.title,
+            bedrooms: listing.details.bedrooms.toString(),
+            bathrooms: listing.details.bathrooms.toString(),
+            description: listing.description,
+            selectedAmenities: listing.amenities || [],
+            coordinates: formattedCoords,
+            previews: existingPreviews,
+            coverPhotoIndex: existingPreviews.findIndex(p => p.isCover) || 0,
+            mediaOrder: existingPreviews.map(p => p.public_id),
+          };
+
+          setInitialData(initialDataSnapshot);
+
+          // Set current state
           setActiveTab(listing.propertyType.category);
           setSelectedProperty(listing.propertyType.subType);
           setPropertyFor(listing.propertyFor);
           setState(listing.location.state);
           setCity(listing.location.city);
-          setCoordinates(listing.location.coordinates.coordinates)
-          setAddress(listing.location.formattedAddress)
-          setSize(listing.details.size.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")); // Re-format size
-          setPrice(listing.price.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")); // Re-format price
+          setIsFeatured(listing.isFeatured);
+          setAddress(listing.location.formattedAddress);
+          setSize(listing.details.size.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+          setPrice(listing.price.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
           setPriceType(listing.price.priceType);
           setPropertyName(listing.title);
           setBedrooms(listing.details.bedrooms.toString());
           setBathrooms(listing.details.bathrooms.toString());
           setDescription(listing.description);
           setSelectedAmenities(listing.amenities || []);
-
-          // 3. Set media states
-          const coverMediaIndex = existingPreviews.findIndex(p => p.isCover);
-          setCoverPhotoIndex(coverMediaIndex !== -1 ? coverMediaIndex : 0);
+          setCoordinates(formattedCoords);
           setPreviews(existingPreviews);
-          setMediaOrder(existingPreviews.map(p => p.public_id)); // Initial order is based on public_id
+          setCoverPhotoIndex(existingPreviews.findIndex(p => p.isCover) || 0);
+          setMediaOrder(existingPreviews.map(p => p.public_id));
 
         } else {
           setToast({ type: "error", message: response.message });
@@ -83,9 +117,10 @@ const UpdatePage = () => {
         setInitialLoading(false);
       }
     };
-
     fetchData();
   }, [listingId]);
+
+
 
 
 
@@ -101,6 +136,7 @@ const UpdatePage = () => {
   const [city, setCity] = useState("");
   const [size, setSize] = useState("");
   const [coordinates, setCoordinates] = useState(null);
+  const [isFeatured, setIsFeatured] = useState(false);
   const [address, setAddress] = useState('');
   const [price, setPrice] = useState("");
   const [files, setFiles] = useState([]); // New files only
@@ -119,10 +155,6 @@ const UpdatePage = () => {
   const [toast, setToast] = useState(null);
 
   // ... (All other functions from Page.jsx: handleFileChange, removeFile, moveFile, FileCard, validators, inputRefs) ...
-
-  useEffect(() => {
-    console.log(coordinates)
-  }, [coordinates])
   const PropertyButton = ({ property, isSelected, handlePropertySelect }) => {
     const IconComponent = property.icon;
 
@@ -181,6 +213,84 @@ const UpdatePage = () => {
       }).format(value)
     );
   };
+
+  const hasValueChanged = (current, initial, key) => {
+    if (current === undefined || initial === undefined) return false;
+
+    // Handle arrays (amenities)
+    if (Array.isArray(current) && Array.isArray(initial)) {
+      if (current.length !== initial.length) return true;
+      return current.some((item, index) => item !== initial[index]);
+    }
+
+    // Handle objects (coordinates)
+    if (typeof current === 'object' && typeof initial === 'object' && current !== null && initial !== null) {
+      return JSON.stringify(current) !== JSON.stringify(initial);
+    }
+
+    // Handle simple values
+    return current !== initial;
+  };
+
+  const hasMediaChanges = () => {
+    return newFiles.length > 0 || removedMediaIds.length > 0 ||
+      JSON.stringify(mediaOrder) !== JSON.stringify(initialData?.mediaOrder) ||
+      coverPhotoIndex !== initialData?.coverPhotoIndex;
+  };
+
+
+  useEffect(() => {
+    if (!initialData) return;
+
+    const changes = [
+      // Basic info changes
+      hasValueChanged(activeTab, initialData.activeTab, 'activeTab'),
+      hasValueChanged(selectedProperty, initialData.selectedProperty, 'selectedProperty'),
+      hasValueChanged(propertyFor, initialData.propertyFor, 'propertyFor'),
+
+      // Location changes
+      hasValueChanged(state, initialData.state, 'state'),
+      hasValueChanged(city, initialData.city, 'city'),
+      hasValueChanged(address, initialData.address, 'address'),
+      hasValueChanged(coordinates, initialData.coordinates, 'coordinates'),
+
+      // Property details
+      hasValueChanged(propertyName, initialData.propertyName, 'propertyName'),
+      hasValueChanged(description, initialData.description, 'description'),
+      hasValueChanged(bedrooms, initialData.bedrooms, 'bedrooms'),
+      hasValueChanged(bathrooms, initialData.bathrooms, 'bathrooms'),
+      hasValueChanged(size, initialData.size, 'size'),
+
+      // Price changes
+      hasValueChanged(price, initialData.price, 'price'),
+      hasValueChanged(priceType, initialData.priceType, 'priceType'),
+
+      // Features & amenities
+      hasValueChanged(isFeatured, initialData.isFeatured, 'isFeatured'),
+      hasValueChanged(selectedAmenities, initialData.selectedAmenities, 'selectedAmenities'),
+
+      // Media changes
+      hasMediaChanges(),
+    ];
+
+    const hasChanges = changes.some(change => change);
+    setHasUnsavedChanges(hasChanges);
+
+    // Show/hide save panel with slight delay for better UX
+    if (hasChanges && !savePanelVisible) {
+      const timer = setTimeout(() => setSavePanelVisible(true), 500);
+      return () => clearTimeout(timer);
+    } else if (!hasChanges && savePanelVisible) {
+      setSavePanelVisible(false);
+    }
+  }, [
+    // All state variables that should trigger change detection
+    activeTab, selectedProperty, propertyFor, state, city, address, coordinates,
+    propertyName, description, bedrooms, bathrooms, size, price, priceType,
+    isFeatured, selectedAmenities, newFiles, removedMediaIds, mediaOrder, coverPhotoIndex,
+    initialData
+  ]);
+
   const MAX_FILES = 12; // Increased for comprehensive property coverage
   const MAX_IMAGE_SIZE = 10 * 1024 * 1024;   // 10MB (increased for high-quality photos)
   const MAX_VIDEO_SIZE = 100 * 1024 * 1024;  // 100MB (for property tours)
@@ -441,9 +551,6 @@ const UpdatePage = () => {
     bathrooms: useRef(null),
   };
 
-  // =========================================================================
-  // 🔄 Update Submission Logic
-  // =========================================================================
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -511,6 +618,93 @@ const UpdatePage = () => {
     } catch (error) {
       console.error('Submission error:', error);
       setToast({ type: "error", message: "Failed to update listing" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    setLoading(true);
+
+    try {
+      const coverMediaPublicId = previews[coverPhotoIndex]?.public_id;
+      const formData = new FormData();
+
+      // Append new files
+      files.forEach(file => {
+        formData.append('newFiles', file);
+      });
+
+      // Generate media order with proper identifiers
+      const mediaOrder = previews.map(preview =>
+        preview.isExisting ? preview.public_id : preview.tempId
+      );
+
+      // Prepare payload
+      const payload = {
+        title: propertyName,
+        description,
+        propertyType: JSON.stringify({ category: activeTab, subType: selectedProperty }),
+        location: JSON.stringify({ state, city }),
+        propertyFor,
+        price: JSON.stringify({ amount: price.replace(/,/g, ""), priceType }),
+        details: JSON.stringify({
+          size: size.replace(/,/g, ""),
+          bedrooms,
+          bathrooms
+        }),
+        amenities: JSON.stringify(selectedAmenities),
+        owner,
+        agent,
+        removedMediaIds: JSON.stringify(removedMediaIds),
+        mediaOrder: JSON.stringify(mediaOrder),
+        mediaTempIds: JSON.stringify(mediaTempIds),
+        coverMediaPublicId: coverMediaPublicId,
+      };
+
+      // Append all payload items to FormData
+      Object.entries(payload).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+
+      const response = await updateListing(listingId, formData);
+
+      if (response.success) {
+        // Update initial data to current state after successful save
+        setInitialData({
+          activeTab,
+          selectedProperty,
+          propertyFor,
+          state,
+          city,
+          isFeatured,
+          address,
+          size,
+          price,
+          priceType,
+          propertyName,
+          bedrooms,
+          bathrooms,
+          description,
+          selectedAmenities,
+          coordinates,
+          previews,
+          coverPhotoIndex,
+          mediaOrder,
+        });
+
+        // Clear media change tracking
+        setNewFiles([]);
+        setRemovedMediaIds([]);
+
+        setToast({ type: "success", message: "Changes saved successfully!" });
+        setSavePanelVisible(false);
+      } else {
+        setToast({ type: "error", message: response.message });
+      }
+    } catch (error) {
+      console.error('Save changes error:', error);
+      setToast({ type: "error", message: "Failed to save changes" });
     } finally {
       setLoading(false);
     }
@@ -776,6 +970,7 @@ const UpdatePage = () => {
     return <div className="text-center py-20 text-xl font-semibold">Loading Listing...</div>;
   }
 
+
   return (
     <>
 
@@ -788,7 +983,42 @@ const UpdatePage = () => {
         />
       )}
 
-      {/* Property Type: */}
+      {/* Save Changes Panel */}
+      {savePanelVisible && <div className="fixed bottom-0 z-100 left-0 right-0 bg-white border-t border-gray-200 px-4 py-4 shadow-lg">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">Unsaved Changes</h3>
+            <p className="text-sm text-gray-500">
+              You have made changes that haven't been saved yet.
+            </p>
+          </div>
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className={`
+        inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-[50px] text-white
+        ${loading
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+              }
+        transition-colors duration-200
+      `}
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
+          </button>
+        </div>
+      </div>}
+
       {currentStep === 1 && (
         <div className="flex flex-col max-w-6xl w-[95%] mx-auto py-8">
           {/* Header */}
@@ -1602,6 +1832,53 @@ const UpdatePage = () => {
                         </ul>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-4 border-gray-100">
+                  <div className="w-full space-y-3 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                    <label className="flex items-center justify-between cursor-pointer group">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg transition-all duration-300 ${isFeatured ? "bg-yellow-100 shadow-inner" : "bg-gray-100 group-hover:bg-gray-200"
+                          }`}>
+                          <FaStar className={`text-lg transition-all duration-300 ${isFeatured ? "text-yellow-500 scale-110 animate-pulse" : "text-gray-400 group-hover:text-gray-500"
+                            }`} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className={`font-semibold transition-colors duration-300 ${isFeatured ? "text-yellow-700" : "text-gray-800"
+                            }`}>
+                            Featured Property
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            {isFeatured ? "Currently featured" : "Make property stand out"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsFeatured(!isFeatured)}
+                        className={`relative cursor-pointer inline-flex items-center h-7 w-14 rounded-full transition-all duration-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 ${isFeatured
+                          ? "bg-yellow-500 shadow-lg shadow-yellow-500/30"
+                          : "bg-gray-300 group-hover:bg-gray-400 shadow-inner"
+                          }`}
+                      >
+                        <span
+                          className={`inline-block w-5 h-5 transform bg-white rounded-full shadow-lg transition-all duration-400 ${isFeatured
+                            ? "translate-x-8 scale-110 shadow-yellow-900/20"
+                            : "translate-x-1 scale-100 shadow-gray-900/20"
+                            }`}
+                        />
+                      </button>
+                    </label>
+
+                    <p className={`text-xs transition-colors py-2 px-3 duration-300 px-1 ${isFeatured ? "text-yellow-600 bg-yellow-50 py-2 px-3 rounded-lg" : "text-gray-500"
+                      }`}>
+                      {isFeatured
+                        ? "✨ This property will be prominently featured on the homepage and listing pages."
+                        : "Toggle to make this property featured and increase its visibility."
+                      }
+                    </p>
                   </div>
                 </div>
               </div>
