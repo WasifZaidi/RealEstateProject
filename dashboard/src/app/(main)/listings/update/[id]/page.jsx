@@ -9,8 +9,9 @@ import CustomToast from "@/app/components/CustomToast";
 // Import the new API utility and the existing API utility (assuming a new one is needed)
 import { getListing, updateListing } from "@/utils/api";
 // Assuming the utility file contains the property types and constants
-import {propertyTypes} from "@/app/constants/propertyTypes"
-import {amenities} from "@/app/constants/amenities"
+import { propertyTypes } from "@/app/constants/propertyTypes"
+import { amenities } from "@/app/constants/amenities"
+import PropertyCoordinates from "@/app/components/PropertyCoordinates";
 // Re-using helper functions from the Create page
 const trimFileName = (name, maxLength = 15) => name.length <= maxLength ? name : name.slice(0, maxLength - 4) + "..." + name.split(".").pop();
 // ... (Include PropertyButton, FileCard, MoveFileControls, validators, handlePriceChange, handleSizeChange, etc., from Page.jsx) ...
@@ -56,6 +57,8 @@ const UpdatePage = () => {
           setPropertyFor(listing.propertyFor);
           setState(listing.location.state);
           setCity(listing.location.city);
+          setCoordinates(listing.location.coordinates.coordinates)
+          setAddress(listing.location.formattedAddress)
           setSize(listing.details.size.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")); // Re-format size
           setPrice(listing.price.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")); // Re-format price
           setPriceType(listing.price.priceType);
@@ -84,6 +87,8 @@ const UpdatePage = () => {
     fetchData();
   }, [listingId]);
 
+
+
   // =========================================================================
   // 🎨 UI Logic (Placeholder for brevity - copy from Page.jsx)
   // =========================================================================
@@ -95,6 +100,8 @@ const UpdatePage = () => {
   const [state, setState] = useState("")
   const [city, setCity] = useState("");
   const [size, setSize] = useState("");
+  const [coordinates, setCoordinates] = useState(null);
+  const [address, setAddress] = useState('');
   const [price, setPrice] = useState("");
   const [files, setFiles] = useState([]); // New files only
   const [previews, setPreviews] = useState([]); // Combined new and existing previews
@@ -113,7 +120,9 @@ const UpdatePage = () => {
 
   // ... (All other functions from Page.jsx: handleFileChange, removeFile, moveFile, FileCard, validators, inputRefs) ...
 
-
+  useEffect(() => {
+    console.log(coordinates)
+  }, [coordinates])
   const PropertyButton = ({ property, isSelected, handlePropertySelect }) => {
     const IconComponent = property.icon;
 
@@ -198,126 +207,126 @@ const UpdatePage = () => {
       img.src = URL.createObjectURL(file);
     });
   };
- const handleFileChange = async (e) => {
-  setError(null);
-  const selectedFiles = Array.from(e.target.files);
+  const handleFileChange = async (e) => {
+    setError(null);
+    const selectedFiles = Array.from(e.target.files);
 
-  if (files.length + selectedFiles.length > MAX_FILES) {
-    return setError(`Maximum ${MAX_FILES} files allowed. You have ${files.length}/${MAX_FILES}.`);
-  }
-
-  const newFiles = [];
-  const newPreviews = [];
-  const newTempIds = []; // Store temp IDs for new files
-
-  for (const file of selectedFiles) {
-    try {
-      // Check file type
-      const isImage = file.type.startsWith("image/");
-      const isVideo = file.type.startsWith("video/");
-
-      if (!isImage && !isVideo) {
-        setError(`Unsupported file type: ${trimFileName(file.name)} (Allowed: JPEG, PNG, WebP, MP4, MOV, AVI)`);
-        setToast({ type: "error", message: `Unsupported file type: ${trimFileName(file.name)} (Allowed: JPEG, PNG, WebP, MP4, MOV, AVI)` });
-        continue;
-      }
-
-      if (isImage && !ALLOWED_IMAGE_TYPES.includes(file.type)) {
-        setError(`Image type not allowed: ${trimFileName(file.name)} (Allowed: JPEG, PNG, WebP)`);
-        setToast({ type: "error", message: `Image type not allowed: ${trimFileName(file.name)} (Allowed: JPEG, PNG, WebP)` });
-        continue;
-      }
-
-      if (isVideo && !ALLOWED_VIDEO_TYPES.includes(file.type)) {
-        setError(`Video type not allowed: ${trimFileName(file.name)} (Allowed: MP4, MOV, AVI)`);
-        setToast({ type: "error", message: `Video type not allowed: ${trimFileName(file.name)} (Allowed: MP4, MOV, AVI)` });
-        continue;
-      }
-
-      // Check file size
-      if (isImage && file.size > MAX_IMAGE_SIZE) {
-        setError(`Image too large: ${trimFileName(file.name)} (Max: 10MB)`);
-        setToast({ type: "error", message: `Image too large: ${trimFileName(file.name)} (Max: 10MB)` });
-        continue;
-      }
-
-      if (isVideo && file.size > MAX_VIDEO_SIZE) {
-        setError(`Video too large: ${trimFileName(file.name)} (Max: 100MB)`);
-        setToast({ type: "error", message: `Video too large: ${trimFileName(file.name)} (Max: 100MB)` });
-        continue;
-      }
-
-      // Validate image dimensions and quality
-      if (isImage) {
-        const dimensionCheck = await validateImageDimensions(file, MIN_IMAGE_WIDTH, MIN_IMAGE_HEIGHT);
-
-        if (!dimensionCheck.isValid) {
-          setError(`Low resolution: ${trimFileName(file.name)} (Minimum: ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}px)`);
-          setToast({ type: "error", message: `Low resolution: ${trimFileName(file.name)} (Minimum: ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}px)` });
-          continue;
-        }
-
-        if (!dimensionCheck.isStandardRatio) {
-          setError(`Non-standard aspect ratio: ${trimFileName(file.name)} (Recommended: 4:3 or 16:9)`);
-          setToast({ type: "error", message: `Non-standard aspect ratio: ${trimFileName(file.name)} (Recommended: 4:3 or 16:9)` });
-          continue;
-        }
-      }
-
-      // Check video duration (if possible)
-      if (isVideo) {
-        const duration = await getVideoDuration(file);
-        if (duration > 300) { // 5 minutes max
-          setError(`Video too long: ${trimFileName(file.name)} (Max: 5 minutes)`);
-          setToast({ type: "error", message: `Video too long: ${trimFileName(file.name)} (Max: 5 minutes)` });
-          continue;
-        }
-      }
-
-      // Generate unique temp ID for frontend-backend sync
-      const tempId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Create preview
-      const objectUrl = URL.createObjectURL(file);
-      newFiles.push(file);
-      newPreviews.push({
-        src: objectUrl,
-        type: file.type.startsWith("video/") ? "video" : "image",
-        name: file.name,
-        size: file.size,
-        duration: file.type.startsWith("video/") ? await getVideoDuration(file) : null,
-        tempId: tempId, // Store temp ID for backend sync
-        isExisting: false // Mark as new file
-      });
-
-      newTempIds.push(tempId); // Store for form submission
-
-    } catch (error) {
-      console.error("Error processing file:", error);
-      setError(`Error processing ${trimFileName(file.name)}`);
-      continue;
+    if (files.length + selectedFiles.length > MAX_FILES) {
+      return setError(`Maximum ${MAX_FILES} files allowed. You have ${files.length}/${MAX_FILES}.`);
     }
-  }
 
-  if (newFiles.length > 0) {
-    setFiles(prev => [...prev, ...newFiles]);
-    setPreviews(prev => [...prev, ...newPreviews]);
+    const newFiles = [];
+    const newPreviews = [];
+    const newTempIds = []; // Store temp IDs for new files
 
-    // Store temp IDs in state for form submission
-    setMediaTempIds(prev => [...prev, ...newTempIds]);
+    for (const file of selectedFiles) {
+      try {
+        // Check file type
+        const isImage = file.type.startsWith("image/");
+        const isVideo = file.type.startsWith("video/");
 
-    // If this is the first file being added, set it as cover if it's an image
-    if (files.length === 0 && newFiles.some(file => file.type.startsWith("image/"))) {
-      const firstImageIndex = newPreviews.findIndex(preview => preview.type === 'image');
-      if (firstImageIndex !== -1) {
-        setCoverPhotoIndex(firstImageIndex);
+        if (!isImage && !isVideo) {
+          setError(`Unsupported file type: ${trimFileName(file.name)} (Allowed: JPEG, PNG, WebP, MP4, MOV, AVI)`);
+          setToast({ type: "error", message: `Unsupported file type: ${trimFileName(file.name)} (Allowed: JPEG, PNG, WebP, MP4, MOV, AVI)` });
+          continue;
+        }
+
+        if (isImage && !ALLOWED_IMAGE_TYPES.includes(file.type)) {
+          setError(`Image type not allowed: ${trimFileName(file.name)} (Allowed: JPEG, PNG, WebP)`);
+          setToast({ type: "error", message: `Image type not allowed: ${trimFileName(file.name)} (Allowed: JPEG, PNG, WebP)` });
+          continue;
+        }
+
+        if (isVideo && !ALLOWED_VIDEO_TYPES.includes(file.type)) {
+          setError(`Video type not allowed: ${trimFileName(file.name)} (Allowed: MP4, MOV, AVI)`);
+          setToast({ type: "error", message: `Video type not allowed: ${trimFileName(file.name)} (Allowed: MP4, MOV, AVI)` });
+          continue;
+        }
+
+        // Check file size
+        if (isImage && file.size > MAX_IMAGE_SIZE) {
+          setError(`Image too large: ${trimFileName(file.name)} (Max: 10MB)`);
+          setToast({ type: "error", message: `Image too large: ${trimFileName(file.name)} (Max: 10MB)` });
+          continue;
+        }
+
+        if (isVideo && file.size > MAX_VIDEO_SIZE) {
+          setError(`Video too large: ${trimFileName(file.name)} (Max: 100MB)`);
+          setToast({ type: "error", message: `Video too large: ${trimFileName(file.name)} (Max: 100MB)` });
+          continue;
+        }
+
+        // Validate image dimensions and quality
+        if (isImage) {
+          const dimensionCheck = await validateImageDimensions(file, MIN_IMAGE_WIDTH, MIN_IMAGE_HEIGHT);
+
+          if (!dimensionCheck.isValid) {
+            setError(`Low resolution: ${trimFileName(file.name)} (Minimum: ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}px)`);
+            setToast({ type: "error", message: `Low resolution: ${trimFileName(file.name)} (Minimum: ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}px)` });
+            continue;
+          }
+
+          if (!dimensionCheck.isStandardRatio) {
+            setError(`Non-standard aspect ratio: ${trimFileName(file.name)} (Recommended: 4:3 or 16:9)`);
+            setToast({ type: "error", message: `Non-standard aspect ratio: ${trimFileName(file.name)} (Recommended: 4:3 or 16:9)` });
+            continue;
+          }
+        }
+
+        // Check video duration (if possible)
+        if (isVideo) {
+          const duration = await getVideoDuration(file);
+          if (duration > 300) { // 5 minutes max
+            setError(`Video too long: ${trimFileName(file.name)} (Max: 5 minutes)`);
+            setToast({ type: "error", message: `Video too long: ${trimFileName(file.name)} (Max: 5 minutes)` });
+            continue;
+          }
+        }
+
+        // Generate unique temp ID for frontend-backend sync
+        const tempId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // Create preview
+        const objectUrl = URL.createObjectURL(file);
+        newFiles.push(file);
+        newPreviews.push({
+          src: objectUrl,
+          type: file.type.startsWith("video/") ? "video" : "image",
+          name: file.name,
+          size: file.size,
+          duration: file.type.startsWith("video/") ? await getVideoDuration(file) : null,
+          tempId: tempId, // Store temp ID for backend sync
+          isExisting: false // Mark as new file
+        });
+
+        newTempIds.push(tempId); // Store for form submission
+
+      } catch (error) {
+        console.error("Error processing file:", error);
+        setError(`Error processing ${trimFileName(file.name)}`);
+        continue;
       }
     }
-  }
 
-  // Clear input
-  e.target.value = "";
-};
+    if (newFiles.length > 0) {
+      setFiles(prev => [...prev, ...newFiles]);
+      setPreviews(prev => [...prev, ...newPreviews]);
+
+      // Store temp IDs in state for form submission
+      setMediaTempIds(prev => [...prev, ...newTempIds]);
+
+      // If this is the first file being added, set it as cover if it's an image
+      if (files.length === 0 && newFiles.some(file => file.type.startsWith("image/"))) {
+        const firstImageIndex = newPreviews.findIndex(preview => preview.type === 'image');
+        if (firstImageIndex !== -1) {
+          setCoverPhotoIndex(firstImageIndex);
+        }
+      }
+    }
+
+    // Clear input
+    e.target.value = "";
+  };
   const getVideoDuration = (file) => {
     return new Promise((resolve) => {
       const video = document.createElement('video');
@@ -436,76 +445,76 @@ const UpdatePage = () => {
   // 🔄 Update Submission Logic
   // =========================================================================
 
-const handleSubmit = async () => {
-  setLoading(true);
+  const handleSubmit = async () => {
+    setLoading(true);
 
-  const coverMediaPublicId = previews[coverPhotoIndex]?.public_id; // Get public_id of the cover photo
+    const coverMediaPublicId = previews[coverPhotoIndex]?.public_id; // Get public_id of the cover photo
 
-  try {
-    const formData = new FormData();
+    try {
+      const formData = new FormData();
 
-    // 1. Append new files to FormData
-    files.forEach(file => {
-      formData.append('newFiles', file); // Backend will expect 'newFiles' array
-    });
+      // 1. Append new files to FormData
+      files.forEach(file => {
+        formData.append('newFiles', file); // Backend will expect 'newFiles' array
+      });
 
-    // 2. Generate media order with proper identifiers
-    const mediaOrder = previews.map(preview => 
-      preview.isExisting ? preview.public_id : preview.tempId
-    );
+      // 2. Generate media order with proper identifiers
+      const mediaOrder = previews.map(preview =>
+        preview.isExisting ? preview.public_id : preview.tempId
+      );
 
-    // 3. Append JSON payload
-    const payload = {
-      title: propertyName,
-      description,
-      propertyType: JSON.stringify({ category: activeTab, subType: selectedProperty }),
-      location: JSON.stringify({ state, city }),
-      propertyFor,
-      price: JSON.stringify({ amount: price.replace(/,/g, ""), priceType }),
-      details: JSON.stringify({
-        size: size.replace(/,/g, ""),
-        bedrooms,
-        bathrooms
-      }),
-      amenities: JSON.stringify(selectedAmenities),
-      owner,
-      agent,
+      // 3. Append JSON payload
+      const payload = {
+        title: propertyName,
+        description,
+        propertyType: JSON.stringify({ category: activeTab, subType: selectedProperty }),
+        location: JSON.stringify({ state, city }),
+        propertyFor,
+        price: JSON.stringify({ amount: price.replace(/,/g, ""), priceType }),
+        details: JSON.stringify({
+          size: size.replace(/,/g, ""),
+          bedrooms,
+          bathrooms
+        }),
+        amenities: JSON.stringify(selectedAmenities),
+        owner,
+        agent,
 
-      // 4. Media management data - UPDATED
-      removedMediaIds: JSON.stringify(removedMediaIds),
-      mediaOrder: JSON.stringify(mediaOrder),
-      mediaTempIds: JSON.stringify(mediaTempIds), // Send temp IDs for backend mapping
-      coverMediaPublicId: coverMediaPublicId,
-    };
+        // 4. Media management data - UPDATED
+        removedMediaIds: JSON.stringify(removedMediaIds),
+        mediaOrder: JSON.stringify(mediaOrder),
+        mediaTempIds: JSON.stringify(mediaTempIds), // Send temp IDs for backend mapping
+        coverMediaPublicId: coverMediaPublicId,
+      };
 
-    // Append all payload items to FormData
-    Object.entries(payload).forEach(([key, value]) => {
-      formData.append(key, value);
-    });
+      // Append all payload items to FormData
+      Object.entries(payload).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
 
-    console.log('🔄 Submitting media data:', {
-      mediaOrder,
-      mediaTempIds,
-      removedMediaIds,
-      coverMediaPublicId,
-      filesCount: files.length
-    });
+      console.log('🔄 Submitting media data:', {
+        mediaOrder,
+        mediaTempIds,
+        removedMediaIds,
+        coverMediaPublicId,
+        filesCount: files.length
+      });
 
-    const response = await updateListing(listingId, formData);
+      const response = await updateListing(listingId, formData);
 
-    if (response.success) {
-      setToast({ type: "success", message: response.message });
-      // Optional: Redirect to listing view or refresh data
-    } else {
-      setToast({ type: "error", message: response.message });
+      if (response.success) {
+        setToast({ type: "success", message: response.message });
+        // Optional: Redirect to listing view or refresh data
+      } else {
+        setToast({ type: "error", message: response.message });
+      }
+    } catch (error) {
+      console.error('Submission error:', error);
+      setToast({ type: "error", message: "Failed to update listing" });
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Submission error:', error);
-    setToast({ type: "error", message: "Failed to update listing" });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
   const handleContinue = () => {
@@ -1097,6 +1106,17 @@ const handleSubmit = async () => {
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className="space-y-6 mb-[20px] pt-6 border-t border-gray-200">
+              <PropertyCoordinates
+                coordinates={coordinates}
+                setCoordinates={setCoordinates}
+                address={address}
+                setAddress={setAddress}
+                errors={errors}
+                setErrors={setErrors}
+              />
             </div>
 
             {/* Preview Card */}

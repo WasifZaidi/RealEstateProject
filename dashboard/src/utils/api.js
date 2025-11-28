@@ -17,6 +17,7 @@ export const uploadListing = async ({
   owner,
   agent,
   files,
+  isFeatured,
   coverPhotoIndex,
   coordinates, // Add coordinates parameter
   address, // Add address for manual entry
@@ -67,6 +68,10 @@ export const uploadListing = async ({
     if (bedrooms) {
       const numericBedrooms = parseInt(bedrooms, 10) || 0;
       formData.append("details[bedrooms]", numericBedrooms.toString());
+    }
+
+    if(isFeatured){
+      formData.append("isFeatured", isFeatured)
     }
 
     if (bathrooms) {
