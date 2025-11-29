@@ -12,7 +12,7 @@ import { getListing, updateListing } from "@/utils/api";
 import { propertyTypes } from "@/app/constants/propertyTypes"
 import { amenities } from "@/app/constants/amenities"
 import PropertyCoordinates from "@/app/components/PropertyCoordinates";
-
+import NextImage from "next/image";
 const UpdatePage = () => {
   const { id: listingId } = useParams();
   const [initialLoading, setInitialLoading] = useState(true);
@@ -43,12 +43,14 @@ const UpdatePage = () => {
           // Map existing media to preview format
           const existingPreviews = listing.media.map((m, index) => ({
             src: m.url,
+            tempId: `new-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
             type: m.resource_type,
             name: m.public_id,
             size: m.bytes,
             duration: m.duration || null,
             public_id: m.public_id,
             isExisting: true,
+            isCover: m.isCover,
             uploadOrder: m.uploadOrder,
           }));
 
@@ -81,6 +83,7 @@ const UpdatePage = () => {
             coverPhotoIndex: existingPreviews.findIndex(p => p.isCover) || 0,
             mediaOrder: existingPreviews.map(p => p.public_id),
           };
+
 
           setInitialData(initialDataSnapshot);
 
@@ -116,6 +119,7 @@ const UpdatePage = () => {
     };
     fetchData();
   }, [listingId]);
+
 
 
 
@@ -211,11 +215,6 @@ const UpdatePage = () => {
     );
   };
 
-  const hasMediaChanges = () => {
-    return newFiles.length > 0 || removedMediaIds.length > 0 ||
-      JSON.stringify(mediaOrder) !== JSON.stringify(initialData?.mediaOrder) ||
-      coverPhotoIndex !== initialData?.coverPhotoIndex;
-  };
 
   const detectChanges = () => {
     if (!initialData) return false;
@@ -365,7 +364,7 @@ const UpdatePage = () => {
         }
 
         // Generate unique temp ID for frontend-backend sync
-        const tempId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const tempId = `new-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
         // Create preview
         const objectUrl = URL.createObjectURL(file);
@@ -522,7 +521,7 @@ const UpdatePage = () => {
     bathrooms: useRef(null),
   };
 
-  
+
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -543,11 +542,22 @@ const UpdatePage = () => {
       );
 
       // 3. Append JSON payload
+      const locationData = {
+        state,
+        city,
+        address,
+      }
+
+      if (coordinates) {
+        locationData.lat = coordinates?.lat,
+          locationData.lng = coordinates?.lng
+      }
+
       const payload = {
         title: propertyName,
         description,
         propertyType: JSON.stringify({ category: activeTab, subType: selectedProperty }),
-        location: JSON.stringify({ state, city }),
+        location: JSON.stringify(locationData),
         propertyFor,
         price: JSON.stringify({ amount: price.replace(/,/g, ""), priceType }),
         details: JSON.stringify({
@@ -746,18 +756,22 @@ const UpdatePage = () => {
         )}
 
         {/* Position Indicator */}
-        <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs z-10">
+        <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 text-xs z-10">
           #{index + 1}
         </div>
 
         {/* Main Content */}
         <div className="aspect-video relative">
           {preview.type === "image" ? (
-            <img
+            <NextImage
               src={preview.src}
+              quality={65}
               alt={`Property visual ${index + 1}`}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 300px, 255px"
             />
+
           ) : (
             <>
               <video
@@ -772,12 +786,14 @@ const UpdatePage = () => {
           )}
 
           {/* Overlay Actions */}
-          <div className={`absolute inset-0 bg-black bg-opacity-0 transition-all duration-300 flex items-center justify-center ${showActions ? 'bg-opacity-40' : 'opacity-0'
-            }`}>
+          <div
+            className={`absolute inset-0 bg-black bg-opacity-0 transition-all duration-300 flex items-center justify-center ${showActions ? "bg-opacity-40" : "opacity-0"
+              }`}
+          >
             <div className="flex gap-2">
               <button
                 onClick={() => onRemove(index)}
-                className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                className="p-2 cursor-pointer bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
                 title="Remove file"
               >
                 <FaTrash className="text-sm" />
@@ -786,7 +802,7 @@ const UpdatePage = () => {
               {canSetCover && (
                 <button
                   onClick={() => onSetCover(index)}
-                  className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                  className="p-2 cursor-pointer bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
                   title="Set as cover photo"
                 >
                   <FaStar className="text-sm" />
@@ -794,7 +810,7 @@ const UpdatePage = () => {
               )}
 
               <button
-                className="p-2 bg-gray-800 text-white rounded-full hover:bg-gray-900 transition-colors cursor-grab active:cursor-grabbing"
+                className="p-2 cursor-pointer bg-gray-800 text-white rounded-full hover:bg-gray-900 transition-colors cursor-grab active:cursor-grabbing"
                 title="Drag to reorder"
               >
                 <FaGripVertical className="text-sm" />
@@ -824,10 +840,10 @@ const UpdatePage = () => {
           </div>
 
           {/* Quick Actions */}
-          <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
+          <div className="flex flex-wrap gap-[14px] justify-between items-center mt-2 pt-2 border-t border-gray-200">
             <button
               onClick={() => onRemove(index)}
-              className="text-red-500 hover:text-red-700 transition-colors text-xs flex items-center gap-1"
+              className="text-red-500 cursor-pointer hover:text-red-700 transition-colors text-xs flex items-center gap-1"
             >
               <FaTrash />
               Remove
@@ -836,7 +852,7 @@ const UpdatePage = () => {
             {canSetCover && !isCover && (
               <button
                 onClick={() => onSetCover(index)}
-                className="text-blue-500 hover:text-blue-700 transition-colors text-xs flex items-center gap-1"
+                className="text-blue-500 cursor-pointer hover:text-blue-700 transition-colors text-xs flex items-center gap-1"
               >
                 <FaStar />
                 Set Cover
@@ -852,40 +868,30 @@ const UpdatePage = () => {
     return (
       <div className="flex flex-col items-center gap-2 bg-gray-100 rounded-lg p-2">
         <span className="text-xs text-gray-600 font-medium">Move to:</span>
-        <div className="flex gap-1">
-          <button
-            onClick={() => onMove(currentIndex, 0)}
-            disabled={currentIndex === 0}
-            className="px-2 py-1 text-xs bg-white border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            title="Move to first position"
-          >
-            First
-          </button>
-          <button
-            onClick={() => onMove(currentIndex, currentIndex - 1)}
-            disabled={currentIndex === 0}
-            className="px-2 py-1 text-xs bg-white border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            title="Move left"
-          >
-            <FaChevronLeft />
-          </button>
-          <button
-            onClick={() => onMove(currentIndex, currentIndex + 1)}
-            disabled={currentIndex === totalFiles - 1}
-            className="px-2 py-1 text-xs bg-white border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            title="Move right"
-          >
-            <FaChevronRight />
-          </button>
-          <button
-            onClick={() => onMove(currentIndex, totalFiles - 1)}
-            disabled={currentIndex === totalFiles - 1}
-            className="px-2 py-1 text-xs bg-white border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            title="Move to last position"
-          >
-            Last
-          </button>
-        </div>
+      <div className="flex gap-1 flex-wrap">
+  {[
+    { label: "First", action: () => onMove(currentIndex, 0), disabled: currentIndex === 0 },
+    { label: <FaChevronLeft />, action: () => onMove(currentIndex, currentIndex - 1), disabled: currentIndex === 0 },
+    { label: <FaChevronRight />, action: () => onMove(currentIndex, currentIndex + 1), disabled: currentIndex === totalFiles - 1 },
+    { label: "Last", action: () => onMove(currentIndex, totalFiles - 1), disabled: currentIndex === totalFiles - 1 },
+  ].map((btn, index) => (
+    <button
+      key={index}
+      onClick={btn.action}
+      disabled={btn.disabled}
+      className="
+        px-2 py-1 text-xs cursor-pointer rounded-md border border-gray-300 bg-white
+        transition-all duration-200 
+        hover:bg-gray-100 hover:shadow-sm hover:scale-[1.03]
+        active:scale-[0.98]
+        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none
+      "
+    >
+      {btn.label}
+    </button>
+  ))}
+</div>
+
       </div>
     );
   };
@@ -1526,9 +1532,9 @@ const UpdatePage = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid preview_media_list  grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {previews.map((preview, index) => (
-                    <div key={index} className="relative">
+                    <div key={preview.tempId} className="relative">
                       <FileCard
                         preview={preview}
                         index={index}
@@ -1549,6 +1555,7 @@ const UpdatePage = () => {
                       </div>
                     </div>
                   ))}
+                  
 
                   {previews.length < MAX_FILES && (
                     <label
