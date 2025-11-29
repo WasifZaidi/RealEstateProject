@@ -188,19 +188,19 @@ function ListingCard({ listing, index }) {
 
             {/* Image Section with semantic markup */}
             <div className="img_box relative h-[250px] overflow-hidden">
-                <Image
-                    src={getCoverImage(listing.media)}
-                    alt={`${listing.title} in ${getLocationString(listing.location)} - ${formatPrice(listing.price)} ${listing.propertyFor === 'rent' ? 'for rent' : 'for sale'}`}
-                    fill
-                    className="img group-hover:scale-110 transition-transform duration-500 ease-out"
-                    style={{ objectFit: "cover" }}
-                    quality={85}
-                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
-                    priority={index < 4} // ✅ Optimize LCP for first 4 images
-                    placeholder="blur"
-                    blurDataURL={BLUE_PLACEHOLDER}
-                    itemProp="image"
-                />
+             <Image
+        src={getCoverImage(listing.media)}
+        alt={`${listing.title} in ${getLocationString(listing.location)} - ${formatPrice(listing.price)} ${listing.propertyFor === 'rent' ? 'for rent' : 'for sale'}`}
+        fill
+        className="img group-hover:scale-110 transition-transform duration-500 ease-out"
+        style={{ objectFit: "cover" }}
+        priority={index < 4}
+        placeholder="blur"
+        blurDataURL={BLUE_PLACEHOLDER}
+        itemProp="image"
+        sizes="(max-width: 500px) 100vw, (max-width: 768px) 50vw, 25vw"
+    />
+
 
                 {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

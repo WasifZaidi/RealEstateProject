@@ -204,7 +204,7 @@ const ManageListingsPage = () => {
     router.push(`/listings/update/${id}`)
   }
   return (
-    <div className="min-h-screen rounded-[20px] bg-white px-4 sm:px-6 py-6 max-w-6xl w-[95%] mx-auto py-8">
+    <div className="min-h-screen bg-[white] max-w-6xl mx-auto rounded-xl py-6 px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
         <div className="mb-4 lg:mb-0">

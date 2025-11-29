@@ -822,7 +822,7 @@ const Page = () => {
 
             {/* Address Size & Price: */}
             {currentStep === 2 && (
-                <div className="flex flex-col max-w-4xl w-[95%] mx-auto py-8">
+                <div className="flex flex-col max-w-6xl w-[95%] mx-auto py-8">
                     {/* Header Section */}
                     <div className="text-center mb-8">
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -1324,7 +1324,7 @@ const Page = () => {
             )}
             {
                 currentStep === 4 && (
-                    <div className="flex flex-col max-w-4xl w-[95%] mx-auto py-8">
+                    <div className="flex flex-col max-w-6xl w-[95%] mx-auto py-8">
                         {/* Header Section */}
                         <div className="text-center mb-8">
                             <h1 className="text-3xl font-bold text-gray-900 mb-2">

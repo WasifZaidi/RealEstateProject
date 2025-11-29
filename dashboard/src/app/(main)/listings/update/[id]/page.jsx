@@ -945,10 +945,23 @@ const UpdatePage = () => {
     }
   };
 
-  if (initialLoading) {
-    return <div className="text-center py-20 text-xl font-semibold">Loading Listing...</div>;
-  }
-
+if (initialLoading) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 space-y-4">
+      {/* Animated spinner */}
+      <div className="relative">
+        <div className="w-12 h-12 border-4 border-blue-100 rounded-full"></div>
+        <div className="w-12 h-12 border-4 border-blue-500 rounded-full animate-spin border-t-transparent absolute top-0"></div>
+      </div>
+      
+      {/* Pulsing text */}
+      <div className="text-center space-y-2">
+        <p className="text-lg font-semibold text-gray-700 animate-pulse">Loading Listing</p>
+        <p className="text-sm text-gray-500">Getting everything ready for you...</p>
+      </div>
+    </div>
+  );
+}
 
   return (
     <>
@@ -1115,7 +1128,7 @@ const UpdatePage = () => {
 
       {/* Address Size & Price: */}
       {currentStep === 2 && (
-        <div className="flex flex-col max-w-4xl w-[95%] mx-auto py-8">
+        <div className="flex flex-col max-w-6xl w-[95%] mx-auto py-8">
           {/* Header Section */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -1617,7 +1630,7 @@ const UpdatePage = () => {
       )}
       {
         currentStep === 4 && (
-          <div className="flex flex-col max-w-4xl w-[95%] mx-auto py-8">
+          <div className="flex flex-col max-w-6xl w-[95%] mx-auto py-8">
             {/* Header Section */}
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">

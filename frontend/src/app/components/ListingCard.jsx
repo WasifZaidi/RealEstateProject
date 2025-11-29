@@ -40,7 +40,7 @@ const ListingCard = ({ listing, selectedForCompare, setSelectedForCompare }) => 
             className="img group-hover:scale-110 transition-transform duration-500 ease-out"
             style={{ objectFit: "cover" }}
             quality={85}
-            sizes="(max-width: 768px) 50vw, 25vw"
+                   sizes="(max-width: 500px) 100vw, (max-width: 768px) 50vw, 25vw"
             placeholder="blur"
             blurDataURL={BLUE_PLACEHOLDER}
           />
