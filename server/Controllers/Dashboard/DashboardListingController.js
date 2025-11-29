@@ -96,7 +96,6 @@ const sanitizeInput = (input) => {
 };
 
 exports.updateListing = async (req, res) => {
-  console.log('rawbo')
   const session = await Listing.startSession();
   session.startTransaction();
 
@@ -157,8 +156,6 @@ exports.updateListing = async (req, res) => {
 
       if (location.address) location.formattedAddress = location.address;
     }
-
-    console.log("location2:", location)
 
 
     // Media-specific data - FIXED: Proper parsing

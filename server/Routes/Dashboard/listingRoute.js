@@ -6,7 +6,7 @@ const validateRequest = require("../../middelware/validation/validateRequest")
 const { upload } = require("../../middelware/upload")
 const router = express();
 const rateLimit = require("express-rate-limit");
-const { createListingSchema } = require("../../middelware/validation/listingSchemas");
+const { createListingSchema, updateListingSchema } = require("../../middelware/validation/listingSchemas");
 const Joi = require('joi');
 const createListingLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -25,17 +25,11 @@ router.post(
   "/update/:id",
   createListingLimiter,
   upload.array("newFiles", 10),
-  (err, req, res, next) => {
-    next(err);
-  },
-  validateRequest(createListingSchema.keys({
-    removedMediaIds: Joi.string().optional(),
-    mediaOrder: Joi.string().optional(),
-    coverMediaPublicId: Joi.string().optional(),
-    mediaTempIds: Joi.string().optional(), 
-  })), 
-  updateListing 
+  (err, req, res, next) => next(err),
+  validateRequest(updateListingSchema),
+  updateListing
 );
+
 router.delete("/dashboard/listing/:listingId", isAuthenticated("access_token_realEstate"), authorizeRoles("admin", "manager", "agent"), deleteListing)
 router.delete("/dashboard/deleteAllListings", deleteAllListings)
 module.exports = router

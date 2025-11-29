@@ -130,35 +130,36 @@ const createListingSchema = Joi.object({
 }).options({ abortEarly: false });
 
 const updateListingSchema = Joi.object({
-  // Basic Information
-  title: Joi.string().trim().max(200).optional().messages({
+  // Basic Info
+  title: Joi.string().trim().max(200).messages({
     'string.max': 'Title cannot exceed 200 characters'
   }),
-  description: Joi.string().trim().max(5000).optional(),
 
-  // Property Classification
+  description: Joi.string().trim().max(5000),
+
+  isFeatured: Joi.boolean(),
+
+  // Classification
   propertyType: Joi.object({
-    category: Joi.string().valid('Residential', 'Plot', 'Commercial', 'Industrial').optional(),
+    category: Joi.string().valid('Residential', 'Plot', 'Commercial', 'Industrial'),
     subType: Joi.string().valid(
       'apartment', 'house', 'villa', 'condo', 'townhouse',
       'commercial-plot', 'residential-plot', 'agricultural-plot', 'industrial-plot',
       'office', 'retail', 'warehouse', 'restaurant',
       'factory', 'storage', 'manufacturing'
-    ).optional()
-  }).optional(),
-
-  // Location
-  location: locationSchema.optional(),
-
-  propertyFor: Joi.string().valid('Sell', 'Rent').optional().messages({
-    'any.only': 'Property for must be either Sell or Rent'
+    )
   }),
 
+  // Location
+  location: locationSchema, // Already optional inside
+
+  propertyFor: Joi.string().valid('Sell', 'Rent', 'Lease'),
+
   // Pricing
-  price: pricingSchema.optional(),
+  price: pricingSchema,
 
   // Property Details
-  details: propertyDetailsSchema.optional(),
+  details: propertyDetailsSchema,
 
   // Amenities
   amenities: Joi.array().items(
@@ -168,29 +169,36 @@ const updateListingSchema = Joi.object({
       'ac', 'heating', 'washer-dryer',
       'security-system', 'gated-community', 'cctv',
       'parking', 'garage', 'patio',
-      'furnished', 'pet-friendly', 'wheelchair-accessible',
+      'furnished', 'pet-friendly',
+      'wheelchair-accessible',
       'high-speed-internet', 'smart-home'
     )
-  ).optional(),
+  ),
 
-  // Status and Visibility
-  status: Joi.string().valid('draft', 'active', 'pending', 'sold', 'expired', 'archived').optional(),
-  isFeatured: Joi.boolean().optional(),
-  isPremium: Joi.boolean().optional(),
-  visibility: Joi.string().valid('public', 'private', 'unlisted').optional(),
+  // Status & visibility
+  status: Joi.string().valid('draft', 'active', 'pending', 'sold', 'expired', 'archived'),
+  visibility: Joi.string().valid('public', 'private', 'unlisted'),
+  isPremium: Joi.boolean(),
 
-  // Media Management
-  deleteMedia: Joi.array().items(Joi.string()).optional(),
-  coverPhotoIndex: Joi.number().integer().min(0).optional(),
+  // Media Fields
+  removedMediaIds: Joi.string(), // stringified array
+  mediaOrder: Joi.string(),       // stringified array
+  mediaTempIds: Joi.string(),     // stringified array of temp IDs
+  coverMediaPublicId: Joi.string(),
 
-  // Contact Info
+  // Owner/Agent Info
+  owner: Joi.string(),
+  agent: Joi.string(),
+
   contactInfo: Joi.object({
-    name: Joi.string().trim().optional(),
-    phone: Joi.string().pattern(/^\+?[\d\s\-\(\)]+$/).optional(),
-    email: Joi.string().email().optional(),
-    showContact: Joi.boolean().optional()
-  }).optional()
+    name: Joi.string().trim(),
+    phone: Joi.string().pattern(/^\+?[\d\s\-\(\)]+$/),
+    email: Joi.string().email(),
+    showContact: Joi.boolean()
+  })
+
 }).options({ abortEarly: false });
+
 
 // Filter schema for GET listings
 
