@@ -43,7 +43,7 @@ export default function SavedListingsPage() {
   const fetchSavedListings = async (page = 1, limit = 12) => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/getSaveListings?page=${page}&limit=${limit}`,
+        `http://localhost:3001/api/getSaveListings?page=${page}&limit=${limit}`,
         {
           credentials: "include",
           cache: "no-store",

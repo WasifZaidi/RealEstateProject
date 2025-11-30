@@ -353,7 +353,7 @@ const Places = () => {
           </div>
 
           {/* ✅ Hidden Accessibility Content */}
-          <dv className="sr-only">
+          <div className="sr-only">
             <h3>Property Search by Location</h3>
             <p>
               Browse properties in popular US cities including Austin, New York, Los Angeles, and Chicago. 
@@ -365,7 +365,7 @@ const Places = () => {
               <li>Los Angeles, California: 3,127+ luxury homes and investments</li>
               <li>Chicago, Illinois: 1,543+ diverse real estate options</li>
             </ul>
-          </dv>
+          </div>
         </div>
       </section>
     </>

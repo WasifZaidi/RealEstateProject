@@ -8,7 +8,7 @@ router.post("/verifyEmail", verifyEmail)
 router.post("/login", login)
 router.post("/google-login", googleLogin);
 router.post("/logout", logout)
-router.get("/me", isAuthenticated("user_token_realEstate"), authorizeRoles("user"), getLoggedInUser)
+router.get("/me", isAuthenticated("user_token_realEstate"), authorizeRoles("user", "admin", "manager", "agent"), getLoggedInUser)
 router.post("/forgotPassword", forgotPassword),
 router.post("/resetPassword/:token", resetPassword),
 router.post("/matchuser", isAuthenticated("user_token_realEstate"), authorizeRoles("user"), matchUser)

@@ -250,7 +250,7 @@ const Navbar = ({ user }) => {
   </Link>
 
   <Link
-    href="/saved"
+    href="/saved-listings"
     className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 
       hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
   >
@@ -326,7 +326,7 @@ const Navbar = ({ user }) => {
                 </div>
               ) : (
                 <a
-                  href="/login"
+                  href="/signIn"
                   className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-[50px] font-medium hover:from-blue-700 hover:to-indigo-700 shadow-sm hover:shadow-md transition-all duration-300 active:scale-95"
                 >
                   <User className="h-4 w-4" />
@@ -421,7 +421,7 @@ const Navbar = ({ user }) => {
                       My Profile
                     </a>
                     <a
-                      href="/saved"
+                      href="/saved-listings"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 text-base text-gray-700 hover:bg-blue-50 rounded-xl transition-all duration-200 relative"
                     >
