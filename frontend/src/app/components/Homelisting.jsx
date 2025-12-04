@@ -21,7 +21,6 @@ async function getHomeListings() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            // ✅ Add timeout for better reliability
             signal: AbortSignal.timeout(10000)
         });
 
@@ -267,7 +266,7 @@ function ListingCard({ listing, index }) {
                             <BedSvg />
                         </div>
                         <span className={`${inter.className} text-[14px] font-medium text-[#2c2c2c]`}>
-                            <span itemProp="numberOfRooms">{listing.details?.bedrooms || 0}</span> Beds
+                            <span itemProp="numberOfRooms">{listing.details?.bedrooms|| 0}</span> Beds
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
